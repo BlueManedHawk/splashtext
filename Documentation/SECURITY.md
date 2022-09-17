@@ -1,0 +1,9 @@
+# Security Policy
+
+This project is currently being maintained by me, Blue-Maned\_Hawk.  In the unlikely event that you discover a security issue, please get in contact with directly by using one of the secure methods [here](bluemanedhawk.github.io/Contact.html).  Don't worry if you're uncertain about whether something is a security issue.  Report it to me anyway—i'd rather be distracted by a problem that's not a security issue than risk a security issue going public.
+
+Most of the time, a security advisory will be issued for a security problem at the same time as a release fixing the security problem.  The advisory will not include details on the security issue at first, but will include a specific date and time when comprehensive details will be released.  This is done so that people will be informed of the urgency of the security issue and discouraged from delaying an upgrade to the latest release, while not disclosing the nature of the issues for malicious agents to exploit, thereby giving some flexibility in upgrading.  It's true that malicious agents will probably figure out the security hole anyway, but hopefully this system can at least delay that.
+
+If a security hole is known to be actively being exploited, then an advisory may be released before a patch is available.  The text of this advisory will encourage people to immediately halt all usage of the software, and for those who construct other software to propagate a similar security advisory to their users.
+
+As of the time of writing, only the latest version of the software will recieve security updates; however, i will try as best i can to maintain this project well enough that people won't be encouraged (either directly or indirectly) to use obsolete versions of the software, but that's beyond the scope of this particular document.
