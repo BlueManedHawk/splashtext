@@ -11,6 +11,7 @@ The restricted content characters are `x` for sexual content, `g` for graphic co
 The context characters are `l` for logs, `c` for crashes, `p` for pseudopromotional statements, `s` for subtitles, `r` for ominous messages, `q` for quotes, and `x` for miscellaneous stuff.
 
 The following types of content are completely prohibited:
+
 	- Spoilers of any size for any piece of media.
 	- Content that seems to be intended specifically to offend.
 	- Text that is liable to break things (such as invalid UTF-8).
