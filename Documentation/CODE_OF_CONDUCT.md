@@ -18,12 +18,12 @@ Decisions shall be made by consensus.
 
 Members are strongly recommended to contribute discussion to any issue or pull request which impacts them.  Members shall not be allowed to directly attack other living people.  Members shall not be discriminated based upon qualities which they cannot control.
 
-Anyone may open a pull request in this repository.  Such a pull request should follow the contribution guidelines.  BlueManedHawk may accept or reject any pull request; however, if there is a consenus among members that a pull request should be either rejected or accepted, such a consensus shall override a decision.
+Anyone may open a pull request in this repository.  Such a pull request should follow the contribution guidelines.  BlueManedHawk may accept or reject any pull request; however, if there is a consenus among members that a pull request should be either rejected or accepted, such a consensus shall override his decision.
 
 ## Criminal Justice
 
-If it is found that a member is violating this code of law, that member shall be put on trial before a randomly-selected jury of twelve of their peers.  Any member shall be given adequate time to state their viewpoint upon the situation, including the potential criminal.  If, after all who desire to speak on the trial have done so, the jury comes to consensus that the member on trial is a criminal, the member shall have their ability to do the thing in which they screwed up suspended until they can prove that they can follow the rules.  If there is no consensus, or the consensus is that the member is not a criminal, the member shall be let free.
+If it is found that a member is violating this code of law, that member shall be put on trial before a randomly-selected jury of twelve of their peers.  Any member shall be given adequate time to state their viewpoint upon the situation, including the potential criminal.  After all who desire to speak on the trial have done so, the jury shall come to a consensus on what ought to be done. If there is no consensus, or the consensus is that the member is not a criminal, the member shall be let free.
 
-When convicting a criminal, the jury must give a clear description of what the criminal must do to atone for their crimes.  A criminal shall always have the ability to ask for clarification or rewording.  The description of what they must do shall be set in stone unless consensus exists that it is wrong.
+When convicting a criminal, the jury must give a clear description of what must be done.  A member shall always have the ability to ask for clarification or rewording on what must be done.  The description of what they must do shall be set in stone unless consensus exists that it is wrong.
 
 A criminal conviction shall not result in the removal of a criminal's basic rights of personhood.
