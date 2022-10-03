@@ -1,1 +1,1 @@
-CONTRIBUTING.md
+../Documentation/CONTRIBUTING.md

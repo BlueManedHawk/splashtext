@@ -1,1 +1,1 @@
-CODE_OF_CONDUCT.md
+../Documentation/CODE_OF_CONDUCT.md
