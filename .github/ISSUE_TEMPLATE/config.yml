@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security Issue
-    url: ../../Documentation/SECURITY.md
+    url: https://github.com/BlueManedHawk/splashtext/security/policy
     about: IF YOU HAVE FOUND A SECURITY ISSUE, DO NOT OPEN AN ISSUE REPORT.  SEE THE SECURITY POLICY FOR DETAILS ON WHAT TO DO.

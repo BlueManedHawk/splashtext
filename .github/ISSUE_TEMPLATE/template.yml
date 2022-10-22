@@ -1,5 +1,5 @@
 name: Issue
-description: This is for any kind of problem with the software, not just what is traditionally considered a \"bug\".
+description: This is for any kind of problem with the software, not just what is traditionally considered a "bug".
 labels:
   - Unconfirmed
   - Not resolved
