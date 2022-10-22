@@ -8,7 +8,7 @@ Use the makefile to build and install the program.  You will need a C11 compatib
 
 ## Usage
 
-See the manpage `splashtext(6)` for details.  It's also available as a markdown file [here](Docs/splashtext.6.md).
+See the manpage `splashtext(6)` for details.
 
 ## Contributing
 

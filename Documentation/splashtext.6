@@ -1,0 +1,154 @@
+.TH SPLASHTEXT "6, but also 7, 3, 5, and 1" 2022-10-21 "Splash Text" "Splash Text Manpage"
+.SH NAME
+splashtext \- a unified system for splash text, freely usable by any program
+.SH SYNOPSIS
+Either
+.RS
+.B #include "splashtext.h"
+
+.B char ** splashtext(enum splashtext
+.IB flags ","
+.B ..., NULL);
+.RE
+or
+.RS
+.B splashtext (--help|--version|--list|[--escapes] [--nostdout] [--yesstderr] [--randnum] --context
+.I context...
+.B -- [--content
+.I content...
+.B -- ]
+.I files/directories...
+.B )
+.RE
+.SH DESCRIPTION
+Splash Text is a unified system for splash text, freely usable by any program. It comes with both a command-line interface and a C subroutine interface, each of which has the same options available. The invocation of the system can be fine-tuned to the needs of the invoker.
+
+Generally, to use the system, one must specify at least one file or directory from which to randomly
+.B (not cryptographically securely)
+grab a splash, and at least one context in which the resulting splash is intended to be used (see the next paragraph for how the contexts and restricted content selections are determined).  If an appropriate splash cannot be found, either the function returns a null pointer or the program exits with status 2.  You can also specify which kinds of restricted content you're okay with; because you can specify directories, this means that you can do stuff like, say, only using the files with dark humor in them if the user of your program says they're okay with that.
+
+Splash text documents have filenames of the form
+.IB "Unique Name" "." abc "." x ".splash.txt"
+, where
+.I Unique Name
+is a unique name,
+.I abc
+are optional characters describing the restricted content found within the file (see options below),
+.I x
+is a character describing the context in which the splash makes sense (see options below), and
+.B splash.txt
+is the literal text "splash.txt".  This means that you can specify a directory with other kinds of files in it, and only the the splash text files will be read from.
+
+You can specify your own splash files, or you can use the
+.I list
+flag to list the ones that come with the program.  Splash files have one splash per line, and use the Privacy Message control character (U+009E) to start comments and String Terminator (U+009C) to end them; this works even across lines.  (String Terminator is also used by other applications in conjunction with the DCS, SOS, OSC, and APC characters, and Splash Text will take this into account when parsing comments.)  Splash files can contain ECMA-48 escape codes (including private-use ones), but these will be automatically stripped out unless the invoker specified the
+.I escapes
+flag.
+
+.SS Recomended practice
+Those who use this program should output splash text in yellow, unless the splash text comes from an ominous file, in which case they should be output in red.  To assist in this, such messages are prepended with private use control character 1 (U+0091).  You are STRONGLY ENCOURAGED to use ominous splashes in some way or another.  Note that these colors are added automatically if you use the
+.I escapes
+flag.
+.SH OPTIONS
+Throughout this section, the options given must be prefaced with "--" when used as options for the program, or "splashtext$" when used as flags for the function (or "splashtext_" if your compiler doesn't support dollars in identifiers).
+
+Note that if you try to use short options, the program will print a special message and fail with exit code 1.
+.IP help
+Prints a help message instead and exits with code 1.
+.B This option is not available for the function.
+This overrides all other flags.
+.IP version
+Emits the version of the software preceeded by the letter "v".  This follows semantic versioning (see semver.org), so it should be pretty easy to parse.
+.B This does not provide any guarantees about the contents of the presupplied splash files!
+If you want to check those, you should use the
+.I list
+option and checksum the corresponding files (or something like that).
+.IP
+This overrides all other flags except
+.IR help .
+Note that the de-facto standard indicates that the
+.I --version
+option should exit with the code 1, so this program does that too.
+.IP list
+Lists the pathnames of the presupplied files.  This will be given as either an array of strings (for the function) or a newline-delimited list (for the program).  This overrides all other flags except
+.I help
+and
+.IR version .
+.IP escapes
+ECMA-48 escape sequences in splashes will not be stripped out.  In addition, splashes will automatically be made yellow (unless they're ominous, in which case they're made red).
+.IP yesstderr
+Also output to STDERR.
+.B This option is not available for the function.
+.IP nostdout
+Don't output to STDOUT.
+.B This option is not available for the function.
+.IP randnum
+Instead of a splash, the output string may instead contain a random number
+.BR "¡that is not cryptographically secure!" ","
+preceeded by private use control character 2 (U+0092) to indicate this.
+.IP context
+.B This behaves differently from the other options.
+.IP
+Specify the contexts which you want to allow.  The following options are available; these are specified either as a space-separated and "--"-terminated list following the
+.I --context
+option on the command line, or by using the flags with the names below prepended with "splashtext$context$" (or "splashtext_context_" if your compiler doesn't support dollars in identifiers).  The letters in parentheses indicate the letter in the filename that indicates the context.
+
+.RS
+.RS
+.PP
+\- log (l) — Splashes that make sense as messages in a logfile.
+.PP
+\- crash (c) — Splashes that make sense as a witty comment in a crash report.
+.PP
+\- subtitle (s) — Splashes that make sense as the subtitle of something.
+.PP
+\- ominous (r) — Various ominous messages.
+.PP
+\- tips (t) — Helpful tips.  This isn't used by the presupplied splash files.
+.PP
+\- quote (q) — Quotes, all of which have attribution.
+.PP
+\- other (o) — Everything else.
+.RE
+.RE
+.IP content
+.B This behaves differently from the other options.
+.IP
+Specify the types of restricted content you're okay with seeing.  This option operates like the
+.I context
+flag, but with the term "content" used in the enumerators instead of "context".  The available options are:
+.RS
+.RS
+.PP
+\- sexual (x) — Sexual content; in the presupplied splashes, this includes cusses like the f-bomb or either c-word (but not cusses like shitstain or asssniffer).
+.PP
+\- graphic (g) — Graphic content.
+.PP
+\- heavy (s) — Heavy content; in the presupplied splashes, this includes anything religious.
+.PP
+\- humor (h) — Not actually being a type of restricted content, this instead combines with the others to indicate that the content inside a particular file is intended to be humorous.
+.RE
+.RE
+.SH EXIT STATUS
+Normally, the program will exit with a 0.  When called with the
+.IR --version " or " --help " or " --list
+options, it will exit with a 1.  If the program can't find a splash, it will return a 2, and if something goes terribly wrong, it will return a 3.
+.SH RETURN VALUE
+Normally, the program will return a pointer to a UTF-8 string (a
+.BR "char **" )
+that will be no longer than one kibibyte, including any terminating characters.  This string will be prepended with private use control character 1 (U+0091) if it's an ominous splash (unless the
+.I escapes
+flag was given), and will be prepended with private use control character 2 (U+0092) if it's a random number instead.
+
+If the function can't find a splash, it will return a null pointer.  If the function is called with the
+.I version
+flag, the string will be a semantic version prepended with the letter "v".  If the function is called with the
+.I list
+flag, it will return a NULL-pointer–terminated array of strings instead, each member of which will be a pathname to one of the presupplied files.
+.SH CONFORMING TO
+Splash Text seeks to be portable to any
+.IR open " and " actively-maintained
+systems.
+.B Ports to obsolete or malicious systems will not be considered.
+.SH AUTHORS
+This project is currently being maintained by Blue-Maned_Hawk, with contributions accepted.  The project is available at https://github.com/BlueManedHawk/splashtext.

@@ -4,13 +4,7 @@ So you want to contribute to Splash Text?  That's great to hear!  This document 
 
 ## New Splashes
 
-Contributing new splashes is done by opening a pull request (see below) modifying the appropriate splash document.  You can contributed as many splashes as you like in a single pull request.  Splash text documents are named in the form "`Unique Name.abc.x.splash.txt`", where `Unique Name` is a unique name, `.abc` are optional descriptions of the restricted content (see below) found within the document, `.x` is a character describing the contexts in which the splashes contained within make sense (see below), and `.splash.txt` is always the text `.splash.txt`.
-
-The restricted content characters are `x` for sexual content (this includes uncensored cusses such as the f-bomb or the c-word, but not cusses like shitnibbler or assface), `g` for graphic content, and `s` for heavy content (this includes anything religious).  In addition, the character `h` is added if the content within the splash file is (intended to be) humorous.
-
-The context characters are `l` for logs, `c` for crashes, `s` for subtitles, `t` for tips (not used by the default files), `r` for ominous messages (the r comes from the **r**ed color they're meant to be rendered in), `q` for quotes, and `x` for miscellaneous stuff.
-
-The following types of content are completely prohibited:
+Contributing new splashes is done by opening a pull request (see below) modifying the appropriate splash document.  You can contributed as many splashes as you like in a single pull request.  See the manpage for how the splash files work.  Note that for the presupplied splashes, the following types of content are completely prohibited:
 
 - Spoilers of any size for any piece of media.
 - Content that seems to be intended specifically to offend.
