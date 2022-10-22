@@ -11,8 +11,6 @@ body:
       options:
         - label: I have read the security policy, and i would have reported this as described there instead of as an issue if this were a security problem.
           required: true
-        - label: I have read and understand the code of law which governs this project.
-          required: true
         - label: I have read the contributing guidelines and understand what they mean for this report.
           required: true
   - type: markdown
@@ -33,25 +31,6 @@ body:
     attributes:
       label: System
       description: Please describe the system in which you are using this software.
-    validations:
-      required: true
-  - type: dropdown
-    # Note:  This is used by the actions to automatically label issues with the correct category.
-    id: category
-    attributes:
-      label: Category
-      multiple: true
-      options:
-        - Splash files
-        - Command-line program
-        - libsplashtext
-        - Portability
-        - Documentation
-        - Standards compliance
-        - Optimization
-        - Source code
-        - General
-        - Other
     validations:
       required: true
   - type: textarea
