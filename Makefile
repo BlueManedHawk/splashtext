@@ -24,21 +24,21 @@ help:
 	@echo "Please specify what you want to do.  Available options are \"build\", \"clean\", and \"install\" (that last one requires superuser priveleges)."
 
 %.o: %.c
-	$(CC) -c $(CFLAGS) $^ -o $@
+	$(CC) -c $(CFLAGS) $^
 
-_cli: $(OBJ_CLI)
+splashtext: $(OBJ_CLI)
 	$(CC) $^ -o "splashtext"
 
-_lib: $(OBJ_LIB)
-	$(CC) $^ -o "libsplashtext.a"
+libsplashtext.a: $(OBJ_LIB)
+	$(AR) $(ARFLAGS) libsplashtext.a $^
 
-build: _cli _lib
+build: splashtext libsplashtext.a
 
 clean:
 	cd Source/Program; rm *.o
 	cd Source/Library; rm *.o
 
-install: splashtext libsplashtext.a
+install: build
 	@if [ $$USER = root ] ; then\
 		cp splashtext /usr/local/games/splashtext;\
 		if [ ! -e /usr/local/share/splashtext/ ]; then\
@@ -52,3 +52,5 @@ install: splashtext libsplashtext.a
 		ls -s /usr/local/man/man5/splashtext.5 /usr/local/man/man6/splashtext.6;\
 		ls -s /usr/local/man/man1/splashtext.1 /usr/local/man/man6/splashtext.6;\
 	else echo "You need superuser priveleges to install Splash Text."; fi
+
+.PHONY: build clean install

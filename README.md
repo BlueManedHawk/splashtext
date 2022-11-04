@@ -12,7 +12,7 @@ See the manpage `splashtext(6)` for details.
 
 ## Contributing
 
-Please see [Documentation/CONTRIBUTING.md](Docs/CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING.md](Documentation/CONTRIBUTING.md) for details.
 
 ## License
 
