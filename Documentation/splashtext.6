@@ -52,7 +52,7 @@ is a character describing the context in which the splashes make sense (see OPTI
 .B splash.txt
 is the literal text "splash.txt".  This means that you can specify a directory with other kinds of files in it, and only the the splash text files will be read from.
 
-Splash files have one splash per line, and use the Start Of String control character (U+0098) to start comments and String Terminator (U+009C) to end them; this works even across lines.  (String Terminator is also used by other applications in conjunction with the DCS, OSC, PM, and APC characters, and Splash Text will take this into account when parsing comments.)  Blank lines (including lines that are only part of a comment) are ignored.
+Splash files have one splash per line, and use the Start Of String control character (U+0098) to start comments and String Terminator (U+009C) to end them; this works even across lines.  (String Terminator is also used by other applications in conjunction with the DCS, OSC, PM, and APC characters, and Splash Text will take this into account when parsing comments.)  Blank lines (including lines that are only part of a comment) are ignored, and trailing whitespace is stripped.
 
 .BR "Be warned that" " (at least in the presupplied files)" ", the restricted content filename letters only apply to the splashes within the file" ","
 and not necessarily the comments within a file.
@@ -64,7 +64,9 @@ flag.  On the other hand, any substring of a splash that starts with PU1-SOS (U+
 .I sequences
 flag was
 .I not
-specified.  This pair of functionalities can be used to specify how to render a piece of text when SGR sequences are not available (for example, surrounding a substring in underscores when it can't be italicized).
+specified; to get the opposite (characters that appear only when control sequences
+.I are
+available), change PU1 (U+0091) to PU2 (U+0092).  This pair of functionalities can be used to specify how to render a piece of text when SGR sequences are not available (for example, surrounding a substring in underscores when it can't be italicized).  Splash Text will recognize when an entire splash is marked to have its text only appear with sequences disabled or enabled, and will only select it when appropriate.
 
 .SS Recomended practice
 Those who use this program should output splash text in yellow, unless the splash text comes from an ominous file, in which case they should be output in red.  This can be detected from the information encoded in the header.  You are STRONGLY ENCOURAGED to use ominous splashes in some way or another.  Note that these colors are added automatically if you use the
@@ -118,7 +120,9 @@ inclusive.
 .IP context
 .B This behaves differently from the other options.
 .IP
-Specify the contexts which you want to allow.  The following options are available; these are specified either as a space-separated and "--"-terminated list following the
+Specify the contexts which you want to allow.  A splash will be selected from files which match
+.I any
+of these contexts.  The following options are available; these are specified either as a space-separated and "--"-terminated list following the
 .I --context
 option on the command line, or by using the flags with the names below prepended with "splashtext$context$" (or "splashtext_context_" if your compiler doesn't support dollars in identifiers).  The letters in parentheses indicate the letter in the filename that indicates the context.
 .RS
@@ -142,7 +146,9 @@ option on the command line, or by using the flags with the names below prepended
 .IP content
 .B This behaves differently from the other options.
 .IP
-Specify the types of restricted content you're okay with seeing.  This option operates like the
+Specify the types of restricted content you're okay with seeing.  Unlike
+.IR context ,
+this option will not cause the selection of a splash from a file which has a type of content that was not explicitly requested.  Otherwise, this option operates like the
 .I context
 flag, but with the term "content" used in the enumerators instead of "context".  The available options are:
 .RS
