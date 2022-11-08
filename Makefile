@@ -13,26 +13,30 @@
 # This license only applies to the copyright of this work, and does not apply to any other intellectual property rights, including but not limited to patent and trademark rights.
 #
 # THIS WORK COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, IMPLIED OR EXPLICIT. THE AUTHOR DISCLAIMS ANY LIABILITY FOR ANY DAMAGES OF ANY KIND CAUSED DIRECTLY OR INDIRECTLY BY THIS WORK.
+.POSIX:
 
 CFLAGS = -Wall -Werror -Wextra -Wpedantic -g -Og
-SRC_CLI = $(wildcard Source/Program/*.c)
-OBJ_CLI = $(SRC_CLI:.c=.o)
-SRC_LIB = $(wildcard Source/Library/*.c)
-OBJ_LIB = $(SRC_LIB:.c=.o)
+
+# See the `build` target below—we do this because POSIX doesn't define what happens when both macros are defined and a specific target is selected in the arguments to `make`.
+bootstrap: $(TARGET)
+	if [ -z "$(TARGET)" ] ; then\
+		make TARGET=help ; fi
+
+.c.o:
+	$(CC) -c $(CFLAGS) $^
+
+# See the `build` target below for where the `SRC` macro comes from.
+splashtext: $(SRC:.c=.o)
+	$(CC) $(LDFLAGS) $^ -o "splashtext"
+
+libsplashtext.a: $(SRC:.c=.o)
+	$(AR) $(ARFLAGS) libsplashtext.a $^
 
 help:
 	@echo "Please specify what you want to do.  Available options are \"build\", \"clean\", and \"install\" (that last one requires superuser priveleges)."
 
-%.o: %.c
-	$(CC) -c $(CFLAGS) $^
-
-splashtext: $(OBJ_CLI)
-	$(CC) $^ -o "splashtext"
-
-libsplashtext.a: $(OBJ_LIB)
-	$(AR) $(ARFLAGS) libsplashtext.a $^
-
-build: splashtext libsplashtext.a
+build:
+	make TARGET=splashtext SRC=` ls ./Source/Program | awk -F ' ' '/.*\.c/' `
 
 clean:
 	cd Source/Program; rm *.o
@@ -40,17 +44,18 @@ clean:
 
 install: build
 	@if [ $$USER = root ] ; then\
-		cp splashtext /usr/local/games/splashtext;\
-		if [ ! -e /usr/local/share/splashtext/ ]; then\
-			mkdir -p /usr/local/share/splashtext/; fi\
-		cp -r Assets/*.splash.txt /usr/local/share/splashtext/;\
-		cp splashtext.h /usr/local/include/splashtext.h;\
-		cp libsplashtext.a /usr/local/lib/libsplashtext.a;\
-		cp Documentation/splashtext.6 /usr/local/man/man6/splashtext.6; gzip -9f /usr/local/man/man6/splashtext.6;\
-		ls -s /usr/local/man/man7/splashtext.7 /usr/local/man/man6/splashtext.6;\
-		ls -s /usr/local/man/man3/splashtext.3 /usr/local/man/man6/splashtext.6;\
-		ls -s /usr/local/man/man5/splashtext.5 /usr/local/man/man6/splashtext.6;\
-		ls -s /usr/local/man/man1/splashtext.1 /usr/local/man/man6/splashtext.6;\
-	else echo "You need superuser priveleges to install Splash Text."; fi
+		cp splashtext /usr/local/games/splashtext ;\
+		if [ ! -e /usr/local/share/splashtext/ ] ; then\
+			mkdir -p /usr/local/share/splashtext/ ; fi ;\
+		cp -r Assets/*.splash.txt /usr/local/share/splashtext/ ;\
+		cp splashtext.h /usr/local/include/splashtext.h ;\
+		cp libsplashtext.a /usr/local/lib/libsplashtext.a ;\
+		cp Documentation/splashtext.6 /usr/local/man/man6/splashtext.6 ;\
+		gzip -9f /usr/local/man/man6/splashtext.6 ; if [ $$? -eq 127 ] ; then compress /usr/local/man/man6/splashtext.6 ; fi ;\
+		ln -s /usr/local/man/man7/splashtext.7 /usr/local/man/man6/splashtext.6 ;\
+		ln -s /usr/local/man/man3/splashtext.3 /usr/local/man/man6/splashtext.6 ;\
+		ln -s /usr/local/man/man5/splashtext.5 /usr/local/man/man6/splashtext.6 ;\
+		ln -s /usr/local/man/man1/splashtext.1 /usr/local/man/man6/splashtext.6 ;\
+	else echo "You need superuser priveleges to install Splash Text." ; fi
 
-.PHONY: build clean install
+.PHONY: build clean install help
