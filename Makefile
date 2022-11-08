@@ -36,7 +36,8 @@ help:
 	@echo "Please specify what you want to do.  Available options are \"build\", \"clean\", and \"install\" (that last one requires superuser priveleges)."
 
 build:
-	make TARGET=splashtext SRC=` ls ./Source/Program | awk -F ' ' '/.*\.c/' `
+	make TARGET=splashtext SRC=` ls ./Source/Program/ | awk -F ' ' '/.*\.c/' `
+	make TARGET=libsplashtext.a SRC=`ls ./Source/Library/ | awk -F ' ' '/.*\.c/' `
 
 clean:
 	cd Source/Program; rm *.o
