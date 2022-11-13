@@ -9,7 +9,6 @@ Contributing new splashes is done by opening a pull request (see below) modifyin
 - Spoilers of any size for any piece of media.
 - Content that seems to be intended specifically to offend.
 - Text that is liable to break things (such as invalid UTF-8 sequences).
-- Any splash that is more than a kibibyte long, including the newline.
 - Any content that is illegal, unless such laws are immoral.
 - Anything that's overly specific to a particular application—see the manpage for how you can have those exclusively be used in your own application.
 
