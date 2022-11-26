@@ -1,6 +1,6 @@
 # Contributing Guidelines
 
-So you want to contribute to Splash Text?  That's great to hear!  This document describes the guidelines for the four methods of contributing:  contributing new splashes, filing issues, and opening pull requests.
+It's great to hear that you want to contribute to Splash Text!  This document describes the guidelines for the four methods of contributing:  contributing new splashes, filing issues, and opening pull requests.
 
 ## New Splashes
 

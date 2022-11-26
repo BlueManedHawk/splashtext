@@ -2,240 +2,190 @@
 .SH NAME
 splashtext \- a unified system for splash text, freely usable by any program
 .SH SYNOPSIS
-Either
-.RS
 .B #include """splashtext.h"""
 
-.B char * splashtext(enum splashtext
-.IB flags ", int " retlen "[2], char * " pathnames "[], size_t " len );
-.RE
-or
+.BI "char * splashtext(struct {float p; int r; char * f;} " files "[], size_t " len ", bool " sequences ", uint16_t " length_restrictions "[2], enum splashtext$context " contexts ", enum splashtext$discomforter " discomforters ");"
+
+.\" I have no idea if this is the correct way to manpage enums.
+.B enum splashtext$context {
+.I /* Flag enum */
 .RS
-.B splashtext (--help|--version|--list|[--sequences] [--minlen
-.IB num "] [--maxlen " num "]"
-.B --context
-.I context...
-.B [--content
-.I content...
-.BI "] -- ([%" "percentage" "]"
-.IB pathname ")...)"
+.B splashtext$context$$log = …,
+.br
+.B splashtext$context$$crash = …,
+.br
+.B splashtext$context$$ominous = …,
+.br
+.B splashtext$context$$tips = …,
+.br
+.B splashtext$context$$quote = …,
+.br
+.B splashtext$context$$other = …
+.br
 .RE
+.B }
+
+.B enum splashtext$discomforter {
+.I /* Flag enum */
+.RS
+.B splashtext$discomforter$$sexual = …,
+.br
+.B splashtext$discomforter$$graphic = …,
+.br
+.B splashtext$discomforter$$heavy = …,
+.br
+.B splashtext$discomforter$$humor = …
+.RE
+.B }
 .SH DESCRIPTION
-Splash Text is a unified system for splash text, freely usable by any program. It comes with both a command-line interface and a C subroutine interface, each of which has the same options available. The invocation of the system can be fine-tuned to the needs of the invoker.
+Splash Text is a unified system for splash text, freely usable by any program.  The invocation of the system can be fine-tuned to the needs of the invoker.  It comes with some presupplied splash files, but you can also supply your own.
 
-Generally, to use the system, one must specify at least one file or directory from which to randomly
-.B (not cryptographically securely)
-grab a splash, and at least one context in which the resulting splash is intended to be used.  If an appropriate splash cannot be found, an empty string is output.  If a directory is specified as a pathname, all splash files (files with a filename ending in
-.BR .splash.txt )
-will be used.
+Splash Text works by taking in an array of filenames and randomly (but in a way that is
+.BR "not cryptographically secure!" )
+selecting a splash from one of them.  The
+.I .f
+member of an element of
+.I files
+is a pointer to a filename, and the
+.I .p
+element is the weight you desire to give to that particular file (you can set this to zero for all files you supply if you don't care about this).  You can also set
+.I .f
+to be the name of the directory, such as
+.BR /usr/local/share/splashtext/ ,
+which is where the presupplied splash files are stored; in this case, only the files that end in
+.I .splash.txt
+will be used to get splashes (so you can just specify a mixed assets directory and you'll be fine), and the weight given in
+.I .p
+will be for the
+.IR "entire directory" .
+Directories are scanned for splash files recursively.  You can also set
+.I .f
+to be a null pointer, in which case Splash Text will pretend that it's a file where each of the splashes is a number from 0 to
+.I .r
+(the returned string has information that allows you to tell whether the splash is a number from one of these pseudofiles).  The maximum value for
+.I .r
+is
+.BR RAND_MAX .
+The argument
+.I len
+specifies the length of the array; note that this is the
+.B total occupied space
+of the array, not the number of elements in the array, or in other words, it's
+.IR "sizeof files" ,
+not
+.IR "sizeof files / sizeof files[0]" .
 
-Each pathname may be preceeded by a string indicating a percentage (separated from the filename by a space) indicating how likely the program should be to pick that particular path.  You can also use strings as percentages—all pathnames with the same string as their percentage will be equally likely to be selected, as will all pathnames that don't have a percentage explicitly attached to them.  If you want to specify a path that actually begins with a percent sign, preceed the pathname with a backslash (and if you want to specify a pathname that actually looks like
-.IR that ,
-preceed it with another backslash, and so on).
+The
+.I length_restrictions
+argument specifies the minimum and maximum length of splash you want returned.  (This is in
+.BR bytes ,
+not characters!)
+.I contexts
+is a bitmask specifying which of the contexts that splashes are designed for you're okay with the splash you recieve being (note that the returned string has information that allows you to tell which context the particular splash you recieved was intended for).  A splash will be selected if it matches
+.I any
+of these contexts.
+.I discomforters
+is a similar bitmask, except that a splash will
+.B always
+be rejected if it has a discomforter you didn't specify.
+.B Please see NOTES below—the way you define these terms may differ from the way the presupplied splash files define them.
+If you want certainty, use your own splash files.
 
-Any pathname consisting of a forward slash followed by a number will be interpreted specially as if it were a file containing strings of all the numbers from zero to the number specified in the pathname;  see NOTES below for how this can be useful.  If you want to specify a real path that happens to be formatted like this, preceed it with a backslash (and if you want to specify a pathname that happens to be formatted like
-.IR that ,
-preceed it with another backslash, and so on).
+Finally, the
+.I sequences
+argument specifies whether ECMA-48 SGR sequences may be included in splashes.  Not every splash has them, but if they do, and this flag is set to
+.BR false ,
+they will be stripped out (but in some cases replacements may be put in their place—see below the description of the Splash Text file format).
+.SS The Splash File File Format
+Splash files are plain UTF-8 text files.  Each line is a splash.  Blank lines and trailing whitespace are ignored.  Comments are started with U+0098 and terminated with U+009C (i.e. Start Of String and String Terminator).  A shebang directive at the start of a file is ignored.
 
-You can specify your own splash files, or you can use the
-.I list
-flag to list the ones that come with the program and then specify those instead; see OPTIONS below for how this flag works.  The presupplied splash files come with certain guarantees; see NOTES below.
-
-.SS Output
-Splash Text will output a UTF-8 string, terminated with either a newline character (from the program) or a nul character (from the function).  The string will begin with a header, initiated by Start Of Heading (U+0001) and terminated by Start Of Text (U+0002), within which will be a character for the context (see OPTIONS below) or a ? character (if it was from a numerical pseudopathname), which may be preceeded by a sequence of restricted content characters followed by a period . character.
-
-If an appropriate splash cannot be found, an empty string (except for the terminating character) is output.  This empty string has no header.
-
-.B Be prepared to deal with the output string as you would any other string.  Remember that Unicode allows for some pretty crazy shit to be done.  In addition, be prepared to deal with the case of failure where an empty string is output.
-
-.SS Format of splash files
-Splash text documents have filenames of the form
-.IB "Unique Name" . abc . x .splash.txt
+The name of a splash file is of the format
+.IB name . abc . x .splash.txt
 , where
-.I Unique Name
+.I name
 is a unique name,
 .I abc
-are optional characters describing the restricted content found within the file (see OPTIONS below),
+is a potentially-empty set of letters indicating the discomforters in the file,
 .I x
-is a character describing the context in which the splashes make sense (see OPTIONS below), and
-.B splash.txt
-is the literal text "splash.txt".  This means that you can specify a directory with other kinds of files in it, and only the the splash text files will be read from.
+is a letter indicating the context in which the splashes in the file make sense, and
+.B .splash.txt
+is the literal text ".splash.txt".  The letters for the contexts are as follows:  l for log, c for crash, r for ominous (see NOTES), t for tips, q for quote, and o for other; and the letters for the discomforters are as follows: x for sexual, g for graphic, s for heavy (see NOTES), and h for humor.  The "h" discomforter cannot appear alone.
+.B Be warned that
+(at least in the presupplied splash files)
+.B the letters in the filenames that indicate discomforters apply only to the splashes—particularly, this means that the comments can contain discomforters that the splashes do not!
 
-Splash files have one splash per line, and use the Start Of String control character (U+0098) to start comments and String Terminator (U+009C) to end them; this works even across lines.  (String Terminator is also used by other applications in conjunction with the DCS, OSC, PM, and APC characters, and Splash Text will take this into account when parsing comments.)  Blank lines (including lines that are only part of a comment) are ignored, and trailing whitespace is stripped.
-
-.BR "Be warned that in the presupplied splash files, the restricted content filename letters only apply to the splashes within the file" ","
-and not necessarily the comments within a file.
-.B In particular, the comments of a file can contain restricted content that the splashes themselves do not!
-
-Splash files can contain Select Graphical Rendition sequences (started with either Escape-[ [U+001B U+005B] or Control Sequence Introducer [U+009B]), but these will be stripped out unless the invoker of Splash Text specifies the
+Splashes may contain ECMA-48 Select Graphical Rendition sequences (introduced with either escape-bracket or control sequence introducer), but these will be stripped out unless the invoker specifies
+.B true
+for the
 .I sequences
-flag.  On the other hand, any substring of a splash that starts with PU1-SOS (U+0091 U+0098) and ends with ST (U+009C) will be stripped out unless the
-.I sequences
-flag was
-.I not
-specified; to get the opposite (characters that appear only when control sequences
-.I are
-available), change PU1 (U+0091) to PU2 (U+0092).  See NOTES below for how this can be put to use.  Splash Text will recognize when an entire splash is marked to have its text only appear with sequences disabled or enabled, and will only select it when appropriate.
+argument.  If you want to include some text only when such sequences are unavailable (for example, to surround a piece of text in underscores only when it can't be italicized), begin that substring with U+0091 U+0098 and terminate it with U+009C.  For the opposite, replace U+0091 with U+0092.  Splash Text will detect when an entire splash is delimited like this and only select it when it wouldn't be an empty line.
 
-.SS Recomended practice
-Those who use this program should output splash text in yellow, unless the splash text comes from an ominous file, in which case they should be output in red.  This can be detected from the information encoded in the header.  You are STRONGLY ENCOURAGED to use ominous splashes in some way or another.  Note that these colors are added automatically if you use the
-.I sequences
-flag.
-
-Unique names should
-.I never
-be relied upon to determine the content of a file!  Only the content and context flags can be used for that.  If you want to be certain of the content of a particular file, you can checksum it or something like that, which Splash Text provides no tools for.
-
-If Splash Text can't find a splash for whatever reason, your application probably shouldn't use a placeholder string.  Handle the failure case more creatively.  If you use your own splash files, be careful about what content you put in them—see NOTES below for the standards used by the presupplied splash files.
-.SH OPTIONS
-Throughout this section, the options given must be prefaced with "--" when used as options for the program, or "splashtext$$" when used as flags for the function.  On the command-line, the list of options is terminated with "--".  To submit multiple options to the function, you need to bitwise OR them together (e.g.
-.IR "splashtext(splashtext$$sequences | splashtext$$context$subtitle | splashtext$$context$other, ...)" ).
-
-Note that, on the command-line, if you try to use short options, the program will print a special message and fail with exit code 1.  Otherwise, invalid options will be silently ignored.  Options
-.B must
-be specified before any pathnames are supplied!
-.IP help
-Prints a help message instead and exits with code 1.
-.B This option is not available for the function.
-This overrides all other flags.
-.IP version
-Emits the version of the software preceeded by the letter "v".  This follows semantic versioning (see https://semver.org), so it should be pretty easy to parse, but we don't provide any tools for that.
-.B This does not provide any guarantees about the contents of the presupplied splash files!
-If you want to check those, you should use the
-.I list
-option and checksum the corresponding files (or something like that—in any case, Splash Text provides no tools to do this).
-.IP
-This overrides all other flags except
-.IR help .
-Note that the de-facto standard indicates that the
-.I --version
-option should exit with the code 1, so this program does that too.
-.IP list
-Lists the pathnames of the presupplied files.  This will be given as a newline-delimited list; embedded newlines in a pathname (?) will be replaced with "\\n" (and embedded backslashes replaced with "\\\\").  This overrides all other flags except
-.I help
-and
-.IR version .
-.IP sequences
-Select Graphical Rendition sequences in splashes will not be stripped out.  In addition, splashes will automatically be made yellow (unless they're ominous, in which case they'll be made red).
-.IP "maxlen and minlen"
-.B These options do not apply to the function.
-Use the
-.I retlen
-parameter instead
-.RI ( retlen[0]
-is the maximum), or specify NULL to use the default.
-
-The following positive nonzero decimal integer specifies the the maximum or minimum length of the splash that will be output, including the header and terminating character.  Note that this will not truncate a splash; instead, it will keep randomly selecting a splash until it finds one that meets the requirements.  If it can't find one after
-.B HAWK FORGOT TO PUT A NUMBER HERE
-tries (or if the lengths are contradictory), an empty string with no header will be output and, if using the program, the exit code will be 2.  If neither of these options are specified, the minimum length will be one and the maximum length will be 1024.
-
-If a length is specified that is not a positive nonzero decimal number, the length specified will not be changed from the default.
-.IP context
-.B This behaves differently from the other options.
-.IP
-Specify the contexts which you want to allow.  A splash will be selected from files which matches
-.I any
-of these contexts; see the "Output" section above for how to parse the header to see which context a particular splash came from.  The following options are available; these are specified either as a space-separated list following the
-.I --context
-option on the command line, or by using the flags with the names below prepended with "splashtext$$context$".  The letters in parentheses indicate the letter in the filename that indicates the context.
+Splash Text comes with a Vim syntax highlighting file that should have been installed if you've installed Splash Text.
+.SS Command-Line Wrapper Program
+The command-line wrapper program has syntax as follows:
 .RS
-.IP -
-log (l) — Splashes that make sense as messages in a logfile.
-.IP -
-crash (c) — Splashes that make sense as a witty comment in a crash report.
-.IP -
-subtitle (s) — Splashes that make sense as the subtitle of something.
-.IP -
-ominous (r) — Various ominous messages.
-.IP -
-tips (t) — Helpful tips.
-.IP -
-quote (q) — Quotes from wherever.
-.IP -
-other (o) — Everything else.
+.BI "splashtext (--help|--version|[--sequences] [--minlen " num "] [--maxlen " num "] [--discomforters " str "...] --contexts " str "... -- (" "[weight] pathname" ")...)"
 .RE
-.IP content
-.B This behaves differently from the other options.
-.IP
-Specify the types of restricted content you're okay with seeing.  Unlike
-.IR context ,
-this option will not cause the selection of a splash from a file which has a type of content that was not explicitly requested (for example, specifying that sexual content is okay won't select a from a file that has graphic content, even if it also has sexual content, unless graphic content was
-.I also
-requested, and regardless it's still possible for it to select a perfectly tame splash file).  Otherwise, this option operates like the
-.I context
-flag, but with the term "content" used in the enumerators instead of "context".
+The weight is disambiguated from the pathname by preceeding it with a percent sign (escape it with a backslash for a filename that happens to fit this format).  The numerical psuedofiles are encoded as a number preceeded by a forward slash (escape it with a backslash for a filename that happens to fit this format).  The strings used for the discomforters and contexts options are the same as the corresponding enumerators, but with everything before and including the double dollar sign removed.  The program will return 1 if invoked with the help or version options (which override all other options), and will return 2 if a splash can't be found (in this case, it will also output nothing).  The splashes output by the program are terminated with a newline, not a nul.  The program does not support short options.
+.SS Recommended Practice
+Once you've gotten the splash text and are showing it to your user, you should render it in yellow, or in red if it's an ominous splash.  (These colors will automatically be added if you specify
+.B true
+for the
+.I escapes
+argument.)  If you can't do this for whatever reason, you should make it clear in some other way that it's just a silly bit of splash text that shouldn't be taken seriously.  You are
+.B STRONGLY ENCOURAGED
+to use ominous splashes in some way.
 
-.B Your definitions for these types of content may vary from the definitions used for the presupplied splash files
-.BI ( "see NOTES below" ).
-.B If you want certainty of the content that a splash could possibly contain, you should use your own splash files.
+The only things that can be relied upon to give an indication of the content of a splash are the context and discomforter flags.  Nothing else should be relied upon—particularly not the filenames of the splash files.
 
-The available options are:
-.RS
-.IP -
-sexual (x) — Sexual content.
-.IP -
-graphic (g) — Graphic content.
-.IP -
-heavy (s) — Heavy content.
-.IP -
-humor (h) — Not actually being a type of restricted content, this instead combines with the others to indicate that the content inside a particular file is intended to be humorous.
-.RE
-.SH EXIT STATUS
-Normally, the program will output a splash and exit with a 0.  When called with the
-.IR --version " or " --help " or " --list
-options (or the caller tries to use short options), it will output the appropriate piece of text and exit with a 1.  If the program can't find a splash, it will output an empty (except for the terminating newline) string with no header and return a 2, and if something goes terribly wrong, it will return a 3 and nothing is guaranteed about the output.
+If Splash Text can't find a splash for whatever reason, you should handle that case more creatively than just using a placeholder splash.
 .SH RETURN VALUE
-Normally, the program will return a UTF-8 string (a
-.BR "char *" )
-that will be no longer than specified, including the terminating character and the header.  If the function can't find a splash, it will return an empty (except for the terminating nul) string with no header.  If the function is called with the
-.I version
-flag, the string will be a semantic version (see https://semver.org) prepended with the letter "v" (you will need to parse this yourself).  If the function is called with the
-.I list
-flag, it will return a string of newline-terminated substrings instead, each member of which will be a pathname for one of the presupplied files.
+Splash Text will return a UTF-8 string allocated on the heap that must be freed after you're done with it.  This will be a splash text preceeded with a header that begins with U+0001 and is terminated with U+0002.  The contents of this header will be a period followed by the letter corresponding to the context of the splash (or a question mark if it's from a numerical psuedofile), possibly preceeded by letters corresponding to discomforters.  If a splash cannot be found (either because of contradictory requirements or the
+.I seeking
+took more than five seconds), NULL will be returned instead.
+.B Be prepared to deal with the output string as you would any other string.
+Remember that Unicode allows for some pretty crazy shit to be done.
+.SH CONFORMING TO
+I am happy to port Splash Text to any
+.I open
+and
+.I actively maintained
+systems.
+.B However, ports to obsolete or malicious systems will not be considered.
 .SH NOTES
-There are some odd decisions made in Splash Text to make the C interface more similar to the command-line interface.  In most cases, the limiting factor was that the command-line is a purely text-based system.  Consider, for instance, how the C interface still returns a newline-delimited list for the
-.I splashtext$$list
-flag, or how it still encodes selection chances as strings prepended with a space to the pathname string.  Again, this was done to make the two interfaces more similar to each other.
+Since trailing whitespace is ignored, you can put a zero-width non-breaking space (or ZWNBSP, or BOM, or byte order mark) at the start of your splash files.
 
-The following types of content do not appear in the presupplied splash files:
-.IP -
-Spoilers for any piece of media
-.IP -
-Content that is intended specifically to offend
-.IP -
-Bizarrely-formed text that is liable to break things
-.IP -
-Any content that is illegal, unless such laws are immoral
-.IP -
-Anything that is overly specific to a particular application
-.PP
-Besides these, no other guarantees are made about what may or may not appear in the presupplied splash files.  While you don't need to follow these guarantees in your own splash files (we have no way to check anyway), submissions for the presupplied splashes won't be accepted if they violate these.
+The presupplied splash files will not contain any of the following types of content:
+.RS
+- Anything that is overly specific to a particular application
+.br
+- Content that is intended specifically to offend
+.br
+- Bizarrely-formed text that is liable to break things
+.br
+- Spoilers for any piece of media
+.br
+- Any content that is unethical (regardless of whether it breaks the law or not)
+.RE
+Besides this, no other guarantees are made about what may or may not appear in the presupplied splash files.  While you don't need to follow these guarantees in your own splash files (we have no way to check anyway), submissions for the presupplied splashes won't be accepted if they violate these.
 
-Regarding restricted content in the presupplied splash files:  Cusses such as "shitstain" or "assface" are not considered to be any type of restricted content—everybody shits, everybody pisses, and everybody has an ass.  However, other cusses like the f-bomb or the c-word (either unit)
+Regarding discomforters in the presupplied splash files:  Cusses such as "shitstain" or "assface" are not considered to be any type of restricted content—everybody shits, everybody pisses, and everybody has an ass.  However, other cusses like the f-bomb or the c-word (either unit)
 .I are
 considered restricted content—in this case, sexual content.  Religious content, including religious cussing, is considered to be heavy content.  In some cases, these restrictions have lead to quotes being changed a little where it doesn't affect their meaning.
 
 In the presupplied files, log splashes will generally end in an elipsis.  In the presupplied files, some subtitle splashes are "promotional" ones, such as "Now filled with more hot garbage!"—keep this in mind when deciding how to format them.  The presupplied splash files always give attribution in the quote splash files.  None of the presupplied splash files are of the "tips" type.
 
 The "s" character for heavy content comes from the term
-.BR s erious,
-which should be in quotes there but i can't get
-.I man
-to format it right.
+.RB \(oq s erious\(cq.
 The "r" character for ominous splashes comes from the
 .BR r ed
-color they're supposed to be rendered in.  The inclusion of the content and context characters in the header of a splash file allows for one to render splashes differently depending upon the context for which they're intended, and not just for the ominous ones.
-
-Because Splash Text allows the invoker to specify directories as the pathnames, you can do things like passing the graphic content option only if the user of your application specified it, instead of having to manually parse the filenames to determine which files to leave out.  With the fact that only files with a specific filename format are considered for splash selection, you can even just specify a mixed-format assets directory and Splash Text will figure it out from there.  (Don't worry, we won't peek at the other files.)
+color they're supposed to be rendered in.  The inclusion of the content and context characters in the header of the returned splash allows for one to render splashes differently depending upon the context for which they're intended, and not just for the ominous ones.
 
 The numerical psuedopaths and the corresponding character in splash headers provide an easy way for an invoker to use "special" splashes that wouldn't work in static text files, such as splashes that are dependent upon the time of day or the user's name.
 
-The splash file syntax for including certain characters only when SGR sequences are enabled or disabled allows for things like surrounding a substring in underscores only when it can't be italicized.  It can be used for other things, but that's the main use.
+I am aware that
+.I splashtext
+is kind of a large psuedo-namespace-esque prefix to use for this library.  But i'm not going to be the asshole who reserves a tiny prefix like `st` for something as small and silly as this.
 
-.SH CONFORMING TO
-Splash Text seeks to be portable to any
-.IR open " and " actively-maintained
-systems.
-.B Ports to obsolete or malicious systems will not be considered.
 .SH AUTHORS
 This project is currently being maintained by Blue-Maned_Hawk, with contributions accepted.  The project is available at https://github.com/BlueManedHawk/splashtext.

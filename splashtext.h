@@ -14,36 +14,34 @@
  *
  * THIS WORK COMES WITH ABSOLUTELY NO WARRANTY OF ANY KIND, IMPLIED OR EXPLICIT. THE AUTHOR DISCLAIMS ANY LIABILITY FOR ANY DAMAGES OF ANY KIND CAUSED DIRECTLY OR INDIRECTLY BY THIS WORK. */
 
-/* This is the header file for libsplashtext.  See the manpage `splashtext(6)` for information on the C language API of Splash Text. */
+/* This is the header file for libsplashtext.  See the manpage `splashtext(6)` for documentation. */
 
 #ifndef SPLASHTEXT_H
 #define SPLASHTEXT_H
 
 #include <stddef.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-#ifdef __clang__
-__attribute__ ((flag_enum))
-#endif
-enum splashtext {
-	splashtext$$version = 0x0001,
-	splashtext$$list = 0x0002,
-	splashtext$$sequences = 0x0004,
-	/* Where is 0x0008? */
+#pragma clang attribute push (__attribute__ ((__flag_enum__)), apply_to = enum) /* Only Clang has the __flag_enum__ attribute, so we don't need to worry about how to apply the attribute when GCC is used. */
+enum splashtext$context {
+	splashtext$context$$log = 0x0001,
+	splashtext$context$$crash = 0x0002,
+	splashtext$context$$subtitle = 0x0004,
+	splashtext$context$$ominous = 0x0008,
+	splashtext$context$$tips = 0x0010,
+	splashtext$context$$quote = 0x0020,
+	splashtext$context$$other = 0x0040
+};
 
-	splashtext$$context$log = 0x0010,
-	splashtext$$context$crash = 0x0020,
-	splashtext$$context$subtitle = 0x0040,
-	splashtext$$context$ominous = 0x0080,
-	splashtext$$context$tips = 0x0100,
-	splashtext$$context$quote = 0x0200,
-	splashtext$$context$other = 0x0400,
+enum splashtext$discomforter {
+	splashtext$discomforter$$sexual = 0x0001,
+	splashtext$discomforter$$graphic = 0x0002,
+	splashtext$discomforter$$heavy = 0x0004,
+	splashtext$discomforter$$humor = 0x0008
+};
+#pragma clang attribute pop
 
-	splashtext$$content$sexual = 0x0800,
-	splashtext$$content$graphic = 0x1000,
-	splashtext$$content$heavy = 0x2000,
-	splashtext$$content$humor = 0x4000
-}
-
-extern char * splashtext(enum splashtext, int[2], char *[], size_t); 
+extern char * splashtext(struct {float p; int r; char * f;}[], enum splashtext$discomforter, enum splashtext$context, bool, uint16_t[2], size_t);
 
 #endif/*ndef SPLASHTEXT_H*/

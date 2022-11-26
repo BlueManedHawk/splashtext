@@ -1,10 +1,10 @@
 # Splash Text
 
-Splash Text is a unified system for splash text, freely usable by any program.  It comes with both a command-line interface and a C subroutine interface, each of which has the same options available.  The invocation of the system can be fine-tuned to the needs of the invoker.
+Splash Text is a unified system for splash text, freely usable by any program.  The invocation of the system can be fine-tuned to the needs of the invoker.  It comes with some presupplied splash files, but you can also supply your own.  Splash Text also comes with a simple command-line wrapper program.
 
 ## Installing
 
-Use the makefile to build and install the program.  You will need a C11 compatible libc and compatibility with POSIX and the Filesystem Hierarchy Standard.  You'll also need `gzip` installed on your system.  I will be happy to port Splash Text to any _open_ and _actively maintained_ systems.  __Ports to obsolete or malicious systems will not be considered__.  Eventually, i do want to get packages available so that one needn't use the makefile.
+The main function of the library, `splashtext()`, only requires compatibility with the C11 language and standard library, plus the extension allowing dollar signs in identifiers.  Building with the makefile requires compatibility with POSIX, and installation with the makefile additionally requires compatibility with the Filesystem Hierarchy Standard.  FHS compliance is also required for the `splashtext$list()` function and the `splashtext` command-line utility.  I will be happy to port Splash Text to any _open_ and _actively maintained_ systems.  __Ports to obsolete or mallicious systems will not be considered.__
 
 ## Usage
 
