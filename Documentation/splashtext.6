@@ -50,9 +50,9 @@ is a pointer to a filename, and the
 .I .p
 element is the weight you desire to give to that particular file (you can set this to zero for all files you supply if you don't care about this).  You can also set
 .I .f
-to be the name of the directory, such as
+to be the name of a directory, such as
 .BR /usr/local/share/splashtext/ ,
-which is where the presupplied splash files are stored; in this case, only the files that end in
+which happens to be where the presupplied splash files are stored (assuming you installed Splash Text, that is); in this case, only the files that end in
 .I .splash.txt
 will be used to get splashes (so you can just specify a mixed assets directory and you'll be fine), and the weight given in
 .I .p
@@ -126,7 +126,7 @@ The command-line wrapper program has syntax as follows:
 .RS
 .BI "splashtext (--help|--version|[--sequences] [--minlen " num "] [--maxlen " num "] [--discomforters " str "...] --contexts " str "... -- (" "[weight] pathname" ")...)"
 .RE
-The weight is disambiguated from the pathname by preceeding it with a percent sign (escape it with a backslash for a filename that happens to fit this format).  The numerical psuedofiles are encoded as a number preceeded by a forward slash (escape it with a backslash for a filename that happens to fit this format).  The strings used for the discomforters and contexts options are the same as the corresponding enumerators, but with everything before and including the double dollar sign removed.  The program will return 1 if invoked with the help or version options (which override all other options), and will return 2 if a splash can't be found (in this case, it will also output nothing).  The splashes output by the program are terminated with a newline, not a nul.  The program does not support short options.
+The weight is disambiguated from the pathname by preceeding it with a percent sign.  The numerical psuedofiles are encoded as a number preceeded by a forward slash.  An actual filename beginning with a percent sign, foreslash, or backslash must be prepended with a backslash.  The strings used for the discomforters and contexts options are the same as the corresponding enumerators, but with everything before and including the double dollar sign removed.  The program will return 1 if invoked with the help or version options (which override all other options), and will return 2 if a splash can't be found (in this case, it will also output nothing).  The splashes output by the program are terminated with a newline, not a nul.  The program does not support short options.
 .SS Recommended Practice
 Once you've gotten the splash text and are showing it to your user, you should render it in yellow, or in red if it's an ominous splash.  (These colors will automatically be added if you specify
 .B true
@@ -143,7 +143,7 @@ If Splash Text can't find a splash for whatever reason, you should handle that c
 Splash Text will return a UTF-8 string allocated on the heap that must be freed after you're done with it.  This will be a splash text preceeded with a header that begins with U+0001 and is terminated with U+0002.  The contents of this header will be a period followed by the letter corresponding to the context of the splash (or a question mark if it's from a numerical psuedofile), possibly preceeded by letters corresponding to discomforters.  If a splash cannot be found (either because of contradictory requirements or the
 .I seeking
 took more than five seconds), NULL will be returned instead.
-.B Be prepared to deal with the output string as you would any other string.
+.B Be prepared to deal with the output string as you would an unsanitized string.
 Remember that Unicode allows for some pretty crazy shit to be done.
 .SH CONFORMING TO
 I am happy to port Splash Text to any
@@ -154,6 +154,10 @@ systems.
 .B However, ports to obsolete or malicious systems will not be considered.
 .SH NOTES
 Since trailing whitespace is ignored, you can put a zero-width non-breaking space (or ZWNBSP, or BOM, or byte order mark) at the start of your splash files.
+
+This library requires that your compiler support the "dollars in identifiers" extension to C.  There is no reason not to support this, and here's why.  Because C has no namespacing facility, we must make due with psuedo-namespaces.  But how should these be separated from the…well,
+.I identifier
+part of the identifier?  We could use an underscore, but then we'd need something different to separate words within the identifier.  Camel case doesn't work because it prevents shortened names like strcat from working…and now we're kinda out of options.  It would be nice if we could keep underscores for the identifier part of identifiers, but use something else for the psuedonamespaces…and as it happens, pre-ISO C compilers allowed dollar signs in identifiers!  Perfect for what we're looking for!
 
 The presupplied splash files will not contain any of the following types of content:
 .RS
@@ -176,7 +180,7 @@ considered restricted content—in this case, sexual content.  Religious content
 In the presupplied files, log splashes will generally end in an elipsis.  In the presupplied files, some subtitle splashes are "promotional" ones, such as "Now filled with more hot garbage!"—keep this in mind when deciding how to format them.  The presupplied splash files always give attribution in the quote splash files.  None of the presupplied splash files are of the "tips" type.
 
 The "s" character for heavy content comes from the term
-.RB \(oq s erious\(cq.
+.RB \(oq s erious\(cq. \" How can this be made not stupid?
 The "r" character for ominous splashes comes from the
 .BR r ed
 color they're supposed to be rendered in.  The inclusion of the content and context characters in the header of the returned splash allows for one to render splashes differently depending upon the context for which they're intended, and not just for the ominous ones.

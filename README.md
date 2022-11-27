@@ -4,7 +4,7 @@ Splash Text is a unified system for splash text, freely usable by any program.  
 
 ## Installing
 
-The main function of the library, `splashtext()`, only requires compatibility with the C11 language and standard library, plus the extension allowing dollar signs in identifiers.  Building with the makefile requires compatibility with POSIX, and installation with the makefile additionally requires compatibility with the Filesystem Hierarchy Standard.  FHS compliance is also required for the `splashtext$list()` function and the `splashtext` command-line utility.  I will be happy to port Splash Text to any _open_ and _actively maintained_ systems.  __Ports to obsolete or mallicious systems will not be considered.__
+The main function of the library, `splashtext()`, only requires compatibility with the C11 language and standard library, plus the extension allowing dollar signs in identifiers.  Building with the makefile requires compatibility with POSIX, and installation with the makefile additionally requires compatibility with the Filesystem Hierarchy Standard.  FHS compliance is also required for the the `splashtext` command-line utility.  I will be happy to port Splash Text to any _open_ and _actively maintained_ systems.  __Ports to obsolete or mallicious systems will not be considered.__
 
 ## Usage
 
