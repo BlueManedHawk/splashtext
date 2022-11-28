@@ -48,17 +48,7 @@ member of an element of
 .I files
 is a pointer to a filename, and the
 .I .p
-element is the weight you desire to give to that particular file (you can set this to zero for all files you supply if you don't care about this).  You can also set
-.I .f
-to be the name of a directory, such as
-.BR /usr/local/share/splashtext/ ,
-which happens to be where the presupplied splash files are stored (assuming you installed Splash Text, that is); in this case, only the files that end in
-.I .splash.txt
-will be used to get splashes (so you can just specify a mixed assets directory and you'll be fine), and the weight given in
-.I .p
-will be for the
-.IR "entire directory" .
-Directories are scanned for splash files recursively.  You can also set
+element is the weight you desire to give to that particular file (you can set this to zero for all files you supply if you don't care about this). You can also set
 .I .f
 to be a null pointer, in which case Splash Text will pretend that it's a file where each of the splashes is a number from 0 to
 .I .r
@@ -74,6 +64,20 @@ of the array, not the number of elements in the array, or in other words, it's
 .IR "sizeof files" ,
 not
 .IR "sizeof files / sizeof files[0]" .
+
+If your system is POSIX compliant and you didn't define the
+.B SPLASHTEXT$NODIRS
+macro when building, you can also set
+.I .f
+to be the name of a directory, such as
+.BR /usr/local/share/splashtext/ ,
+which happens to be where the presupplied splash files are stored (assuming you installed Splash Text, that is); in this case, only the files that end in
+.I .splash.txt
+will be used to get splashes (so you can just specify a mixed assets directory and you'll be fine), and the weight given in
+.I .p
+will be for the
+.IR "entire directory" .
+Directories are scanned for splash files recursively.
 
 The
 .I length_restrictions
