@@ -28,7 +28,7 @@ int main(int argc, char * argv[]) {
 	enum splashtext$context contexts = 0;
 	enum splashtext$discomforter discomforters = 0;
 	bool sequences = false;
-	unsigned uint16_t retlen[2] = {[0] = 0, [1] = 1024};
+	unsigned uint_least16_t retlen[2] = {[0] = 0, [1] = 1024};
 
 	register int i = 1;
 	/* The arguments to Splash Text always come before any pathnames; therefore, we start one loop to deal with the options and then start another one to deal with the pathnames once we reach them. */

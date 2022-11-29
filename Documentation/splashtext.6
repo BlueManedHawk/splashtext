@@ -4,7 +4,7 @@ splashtext \- a unified system for splash text, freely usable by any program
 .SH SYNOPSIS
 .B #include """splashtext.h"""
 
-.BI "char * splashtext(struct {float p; int r; char * f;} " files "[], size_t " len ", bool " sequences ", uint16_t " length_restrictions "[2], enum splashtext$context " contexts ", enum splashtext$discomforter " discomforters ");"
+.BI "char * splashtext(struct {float p; int r; char * f;} " files "[], size_t " len ", bool " sequences ", uint_least16_t " length_restrictions "[2], enum splashtext$context " contexts ", enum splashtext$discomforter " discomforters ");"
 
 .\" I have no idea if this is the correct way to manpage enums.
 .B enum splashtext$context {

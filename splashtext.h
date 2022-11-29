@@ -42,6 +42,6 @@ enum splashtext$discomforter {
 };
 #pragma clang attribute pop
 
-extern char * splashtext(struct {float p; int r; char * f;}[], enum splashtext$discomforter, enum splashtext$context, bool, uint16_t[2], size_t);
+extern char * splashtext(struct {float p; int r; char * f;}[], size_t, bool, uint_least16_t[2], enum splashtext$discomforter, enum splashtext$context);
 
 #endif/*ndef SPLASHTEXT_H*/
