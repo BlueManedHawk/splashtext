@@ -28,7 +28,7 @@ int main(int argc, char * argv[]) {
 	enum splashtext$context contexts = 0;
 	enum splashtext$discomforter discomforters = 0;
 	bool sequences = false;
-	unsigned uint_least16_t retlen[2] = {[0] = 0, [1] = 1024};
+	uint_least16_t retlen[2] = {[0] = 0, [1] = 1024};
 
 	register int i = 1;
 	/* The arguments to Splash Text always come before any pathnames; therefore, we start one loop to deal with the options and then start another one to deal with the pathnames once we reach them. */
@@ -45,7 +45,7 @@ int main(int argc, char * argv[]) {
 				"\n"
 				"--help, --version, and --list override all other options.  --sequences says that it's okay if splashes contain Select Graphical Rendition sequences.  The default minimum length is 0, and the default maximum is 1024; these numbers include the header and terminating characters.\n"
 				"\n"
-				"Available contexts are `log`, `crash`, `subtitle`, `ominous`, `tips`, `quote`, and `other`.  Available contents are `sexual`, `graphic`, and `heavy`, with `humor` as a special parameter indicating humorous content based on these topic.\n"
+				"Available contexts are `log`, `crash`, `subtitle`, `ominous`, `tips`, `quote`, and `other`.  Available discomforters are `sexual`, `graphic`, and `heavy`, with `humor` as a special parameter indicating humorous content based on these topic.\n"
 				"\n"
 				"The program will normally output a splash and return 0.  If --help or --version was specified (or you tried to use a short option), it will output the correspronding text and return 1.  If a splash can't be found, it will output nothing and return 2.  In the event of catastrophic failure, it will return 3 and nothing is guaranteed about the output.\n"
 			);
@@ -135,7 +135,6 @@ int main(int argc, char * argv[]) {
 				fprintf(stderr, "warning: unrecognized value for numerical pseudofile in argument `%s` is ignored\n", argv[i]);
 			else
 				pathnames[j].r = val;
-			j--;
 		} else if (argv[i][0] == '%') {
 			char endptr[strlen(argv[i]) + 1];
 			pathnames[j].p = strtof(argv[i] + 1, endptr);
@@ -148,6 +147,7 @@ int main(int argc, char * argv[]) {
 			pathnames[j].f = argv[i];
 		}
 	}
+	j++;
 
 	char * splash = splashtext(pathnames, (size_t)j * sizeof struct {float p; int r; char * f;}, sequences, retlen, contexts, discomforters);
 	if (splash == NULL)

@@ -49,7 +49,7 @@ install: build
 		if [ ! -e /usr/local/share/splashtext/ ] ; then\
 			mkdir -p /usr/local/share/splashtext/ ; fi ;\
 		cp -r Assets/*.splash.txt /usr/local/share/splashtext/ ;\
-		cp splashtext.h /usr/local/include/splashtext.h ;\
+		cp Include/splashtext.h /usr/local/include/splashtext.h ;\
 		cp libsplashtext.a /usr/local/lib/libsplashtext.a ;\
 		cp Documentation/splashtext.6 /usr/local/man/man6/splashtext.6 ;\
 		gzip -9f /usr/local/man/man6/splashtext.6 ; if [ $$? -eq 127 ] ; then compress /usr/local/man/man6/splashtext.6 ; fi ;\
