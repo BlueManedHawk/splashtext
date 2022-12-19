@@ -83,7 +83,7 @@ The
 .I length_restrictions
 argument specifies the minimum and maximum length of splash you want returned.  (This is in
 .BR bytes ,
-not characters!)
+not characters!)  Note that this rejects any splash that violates these requirements instead of shortening or lengthening the splash.
 .I contexts
 is a bitmask specifying which of the contexts that splashes are designed for you're okay with the splash you recieve being (note that the returned string has information that allows you to tell which context the particular splash you recieved was intended for).  A splash will be selected if it matches
 .I any
@@ -107,13 +107,13 @@ The name of a splash file is of the format
 .IB name . abc . x .splash.txt
 , where
 .I name
-is a unique name,
+is a unique name (no restrictions except for whatever's imposed by your filesystem),
 .I abc
 is a potentially-empty set of letters indicating the discomforters in the file,
 .I x
 is a letter indicating the context in which the splashes in the file make sense, and
 .B .splash.txt
-is the literal text ".splash.txt".  The letters for the contexts are as follows:  l for log, c for crash, r for ominous (see NOTES), t for tips, q for quote, and o for other; and the letters for the discomforters are as follows: x for sexual, g for graphic, s for heavy (see NOTES), and h for humor.  The "h" discomforter cannot appear alone.
+is the literal text ".splash.txt".  The letters for the contexts are as follows:  l for log, c for crash, s for subtitle, r for ominous (see NOTES), t for tips, q for quote, and o for other; and the letters for the discomforters are as follows: x for sexual, g for graphic, s for heavy (see NOTES), and h for humor.  The "h" discomforter cannot appear alone.
 .B Be warned that
 (at least in the presupplied splash files)
 .B the letters in the filenames that indicate discomforters apply only to the splashes—particularly, this means that the comments can contain discomforters that the splashes do not!
@@ -161,7 +161,7 @@ Since trailing whitespace is ignored, you can put a zero-width non-breaking spac
 
 This library requires that your compiler support the "dollars in identifiers" extension to C.  There is no reason not to support this, and here's why.  Because C has no namespacing facility, we must make due with psuedo-namespaces.  But how should these be separated from the…well,
 .I identifier
-part of the identifier?  We could use an underscore, but then we'd need something different to separate words within the identifier.  Camel case doesn't work because it prevents shortened names like strcat from working…and now we're kinda out of options.  It would be nice if we could keep underscores for the identifier part of identifiers, but use something else for the psuedonamespaces…and as it happens, pre-ISO C compilers allowed dollar signs in identifiers!  Perfect for what we're looking for!
+part of the identifier?  We could use an underscore, but then we'd need something different to separate words within the identifier.  Camel case doesn't work because it prevents shortened names like strcat from working (it also looks very unprofessional)…and now we're kinda out of options.  It would be nice if we could keep underscores for the identifier part of identifiers, but use something else for the psuedonamespaces…and as it happens, modern C compilers have an extension to allow dollar signs in identifiers!  Perfect for what we're looking for!
 
 The presupplied splash files will not contain any of the following types of content:
 .RS

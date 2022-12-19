@@ -23,6 +23,13 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stddef.h>
+#ifndef SPLASHTEXT$NODIRS
+#include <dirent.h>
+#ifndef _XOPEN_UNIX
+#include <fcntl.h>
+#endif
+#include <sys/stat.h>
+#endif
 
 char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool sequences, uint_least16_t length_restrictions[2], enum splashtext$context contexts, enum splashtext$discomforter discomforters)
 {
@@ -32,34 +39,79 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 	if (contexts == 0)
 		return NULL;
 
-	size_t valid_fnames[len / sizeof (struct {float p; int r; char * f})], valid_fnames_len = 0;
-	for (register size_t i = 00; i < len / sizeof (struct {float p; int r; char * f}); i++) {
-		size_t fnamelen = strlen(files[i].f);
-		if (strcmp(files[i].f + fnamelen - 11, ".splash.txt")) // missing the end bit
-			continue;
-		if (files[i].f[fnamelen - 12] == '.') // missing the context
+	struct {
+		struct {float p; int r; char * f;} * file;
+		long int * offsets; // array
+		size_t offsets_len;
+	}
+	/* If compiled with support for directories, the number of possible _valid_ files may be higher than the number of filenames supplied, so we need a resizable (i.e. dynamically allocated) array; however, if we have _not_ compiled with support for directories, then the number of valid files can never be higher than the number of filenames supplied. */
+#ifndef SPLASHTEXT$NODIRS
+	* valid_files = NULL;
+#else
+	valid_files[len / sizeof files[0]];
+#endif
+	size_t valid_files_len = 0;
+
+	/* TODO:  This doesn't work on directories yet. */
+#ifndef SPLASHTEXT$NODIRS
+	struct {float p; int r; char * f;} * extra = NULL;
+	size_t extra_len = 0;
+	for (register size_t i = 00; i < len / sizeof files[0]; i++) {
+		struct stat file_stat;
+		stat(files[i].f, &file_stat);
+		if (!S_ISREG(file_stat.st_mode))
+			if (!S_ISDIR(file_stat.st_mode))
+				recurse_directory(files[i].f, extra, &extra_len);
+		/* We _could_ finagle with removing directories from `files` now that we know that they're directories instead of files…but since they're going to get rejected later in the process anyways, i don't think it's worth bothering with that. */
+	}
+#endif
+	for (register size_t i = 00; i < len / sizeof files[0]
+#ifndef SPLASHTEXT$NODIRS
+		+ extra_len / sizeof extra[0]
+#endif
+		; i++) {
+		struct {float p; int r; char * f} curflist[] =
+#ifndef SPLASHTEXT$NODIRS
+			i >= len / sizeof files ? extra :
+#endif
+			files;
+
+		if (curflist[i].f == NULL)
+			if (curflist.r > 0)
+				goto isvalidfile;
+			else
+				continue;
+
+		if (curflist[i].p <= 0)
 			continue;
 
+		size_t fnamelen = strlen(curflist[i].f);
+
+		if (strcmp(curflist[i].f + fnamelen - 11, ".splash.txt")) // missing the end bit
+			continue;
+		if (curflist[i].f[fnamelen - 12] == '.') // missing the context
+			continue;
+
+		/* A lot of this feels like it could be made nicer. */
 		if (
-			(files[i].f[fnamelen - 12] == 'l' && contexts & splashtext$context$$log)
-			|| (files[i].f[fnamelen - 12] == 'c' && contexts & splashtext$context$$crash)
-			|| (files[i].f[fnamelen - 12] == 's' && contexts & splashtext$context$$subtitle)
-			|| (files[i].f[fnamelen - 12] == 'r' && contexts & splashtext$context$$ominous)
-			|| (files[i].f[fnamelen - 12] == 't' && contexts & splashtext$context$$tips)
-			|| (files[i].f[fnamelen - 12] == 'q' && contexts & splashtext$context$$quotes)
-			|| (files[i].f[fnamelen - 12] == 'o' && contexts & splashtext$context$$other)
+			(curflist[i].f[fnamelen - 12] == 'l' && contexts & splashtext$context$$log)
+			|| (curflist[i].f[fnamelen - 12] == 'c' && contexts & splashtext$context$$crash)
+			|| (curflist[i].f[fnamelen - 12] == 's' && contexts & splashtext$context$$subtitle)
+			|| (curflist[i].f[fnamelen - 12] == 'r' && contexts & splashtext$context$$ominous)
+			|| (curflist[i].f[fnamelen - 12] == 't' && contexts & splashtext$context$$tips)
+			|| (curflist[i].f[fnamelen - 12] == 'q' && contexts & splashtext$context$$quotes)
+			|| (curflist[i].f[fnamelen - 12] == 'o' && contexts & splashtext$context$$other)
 		) {
-			/* There definitely should be some way to make this a switch statement. */
 			int_least8_t num_discomforters;
-			if (files[i].f[fnamelen - 14] == '.')
+			if (curflist[i].f[fnamelen - 14] == '.')
 				num_discomforters = 0;
-			else if (files[i].f[fnamelen - 15] == '.')
+			else if (curflist[i].f[fnamelen - 15] == '.')
 				num_discomforters = 1;
-			else if (files[i].f[fnamelen - 16] == '.')
+			else if (curflist[i].f[fnamelen - 16] == '.')
 				num_discomforters = 2;
-			else if (files[i].f[fnamelen - 17] == '.')
+			else if (curflist[i].f[fnamelen - 17] == '.')
 				num_discomforters = 3;
-			else if (files[i].f[fnamelen - 18] == '.')
+			else if (curflist[i].f[fnamelen - 18] == '.')
 				num_discomforters = 4;
 			else
 				continue;
@@ -68,10 +120,10 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 			bool invalid = false;
 			for (register int_least8_t j = num_discomforters; j < num_discomforters; j++)
 				if (
-					(files[i].f[fnamelen - 13 - j] == 'x' && !(discomforters & splashtext$discomforter$$sexual))
-					|| (files[i].f[fnamelen - 13 - j] == 'g' && !(discomforters & splashtext$discomforter$$graphic))
-					|| (files[i].f[fnamelen - 13 - j] == 's' && !(discomforters & splashtext$discomforter$$heavy))
-					|| (files[i].f[fnamelen - 13 - j] == 'h' && !(discomforters & splashtext$discomforter$$humor))
+					(curflist[i].f[fnamelen - 13 - j] == 'x' && !(discomforters & splashtext$discomforter$$sexual))
+					|| (curflist[i].f[fnamelen - 13 - j] == 'g' && !(discomforters & splashtext$discomforter$$graphic))
+					|| (curflist[i].f[fnamelen - 13 - j] == 's' && !(discomforters & splashtext$discomforter$$heavy))
+					|| (curflist[i].f[fnamelen - 13 - j] == 'h' && !(discomforters & splashtext$discomforter$$humor))
 				) {
 					invalid = true;
 					break; // Really wish that break break syntax had made it into C23.
@@ -79,8 +131,12 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 			if (invalid)
 				continue;
 
-			valid_fnames[j] = i;
-			valid_fnames_len++;
+isvalidfile:
+#ifndef SPLASHTEXT$NODIRS
+			realloc(valid_files, (valid_files_len + 1) * sizeof valid_files[0]);
+#endif
+			valid_files[valid_files_len].file = &curflist[i];
+			valid_files_len++;
 		}
 	}
 	/* parse splash files */
@@ -97,5 +153,35 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 	char * splash = malloc(length_restrictions[1]);
 		/* grab the splash and make any `sequences` adjustments */
 		/* add the header */
+	for (register size_t i = 0; i < extra_len; i++)
+		free(extra[i].f);
 	return splash;
 }
+
+#ifndef SPLASHTEXT$NODIRS
+static void recurse_directory(const char * dirname, float probability, struct {float p; int r; char * f;} extra[], size_t * extra_len)
+{
+	DIR * directory = opendir(files[i].f);
+	if (directory == NULL)
+		continue;
+	struct dirent * entry = NULL;
+	struct stat * file_stat = NULL;
+	size_t /* ? */ num_entries = 0;
+	while ((entry = readdir(directory)) != NULL)
+		num_entries++;
+	rewinddir(directory);
+	while ((entry = readdir(directory)) != NULL) {
+		stat(entry->d_name, &file_stat);
+		if (!S_ISREG(file_stat.st_mode)) {
+			if (!S_ISDIR(file_stat.st_mode))
+				recurse_directory(entry->d_name, extra, &extra_len);
+		} else {
+			realloc(extra, (*extra_len + 1) * sizeof extra[0]);
+			extra[*extra_len].f = malloc(strlen(entry->d_name) + 1);
+			strcpy(extra[*extra_len].f, entry->d_name);
+			extra[*extra_len].f = probability / num_entries;
+		}
+	}
+	closedir(directory);
+}
+#endif
