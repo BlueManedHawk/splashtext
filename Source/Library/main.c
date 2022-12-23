@@ -24,16 +24,15 @@
 #include <stdlib.h>
 #include <stddef.h>
 #ifndef SPLASHTEXT$NODIRS
-#include <dirent.h>
-#ifndef _XOPEN_UNIX
-#include <fcntl.h>
-#endif
-#include <sys/stat.h>
+#	include <dirent.h>
+#	ifndef _XOPEN_UNIX
+#		include <fcntl.h>
+#	endif
+#	include <sys/stat.h>
 #endif
 
 char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool sequences, uint_least16_t length_restrictions[2], enum splashtext$context contexts, enum splashtext$discomforter discomforters)
 {
-	/* perform sanity checks */
 	if (length_restrictions[1] <= length_restrictions[0])
 		return NULL;
 	if (contexts == 0)
@@ -41,8 +40,8 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 
 	struct {
 		struct {float p; int r; char * f;} * file;
-		long int * offsets; // array
-		size_t offsets_len;
+		struct {long int off; uint_least16_t len;} * lines; // dynamicly-allocated array
+		size_t lines;
 	}
 	/* If compiled with support for directories, the number of possible _valid_ files may be higher than the number of filenames supplied, so we need a resizable (i.e. dynamically allocated) array; however, if we have _not_ compiled with support for directories, then the number of valid files can never be higher than the number of filenames supplied. */
 #ifndef SPLASHTEXT$NODIRS
@@ -52,7 +51,6 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 #endif
 	size_t valid_files_len = 0;
 
-	/* TODO:  This doesn't work on directories yet. */
 #ifndef SPLASHTEXT$NODIRS
 	struct {float p; int r; char * f;} * extra = NULL;
 	size_t extra_len = 0;
@@ -61,7 +59,7 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 		stat(files[i].f, &file_stat);
 		if (!S_ISREG(file_stat.st_mode))
 			if (!S_ISDIR(file_stat.st_mode))
-				recurse_directory(files[i].f, extra, &extra_len);
+				recurse_directory(files[i].f, files[i].p, extra, &extra_len);  // this has to be a separate subroutine so that recursion can be done
 		/* We _could_ finagle with removing directories from `files` now that we know that they're directories instead of files…but since they're going to get rejected later in the process anyways, i don't think it's worth bothering with that. */
 	}
 #endif
@@ -123,7 +121,7 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 					(curflist[i].f[fnamelen - 13 - j] == 'x' && !(discomforters & splashtext$discomforter$$sexual))
 					|| (curflist[i].f[fnamelen - 13 - j] == 'g' && !(discomforters & splashtext$discomforter$$graphic))
 					|| (curflist[i].f[fnamelen - 13 - j] == 's' && !(discomforters & splashtext$discomforter$$heavy))
-					|| (curflist[i].f[fnamelen - 13 - j] == 'h' && !(discomforters & splashtext$discomforter$$humor))
+					|| (curflist[i].f[fnamelen - 13 - j] == 'h' && !(discomforters & splashtext$discomforter$$humor && discomforters & (splashtext$discomforter$$heavy | splashtext$discomforter$$graphic | splashtext$discomforter$$sexual))) // Remember: The "humor" discomforter cannot appear alone.
 				) {
 					invalid = true;
 					break; // Really wish that break break syntax had made it into C23.
@@ -143,18 +141,43 @@ isvalidfile:
 		/* obtain offsets and lengths of each valid line by a finite-state machine, discarding any lines that `sequences` prohibits */
 		/* store offsets so that they're associated with the correct files */
 	/* select a splash */
-	struct timespec ts;
-	if (!timespec_get(&ts, TIME_UTC /* Why TIME_UTC instead of TIME_MONOTONIC?  Imagine a situation where this library is being used in the startup of a system, perhaps as a message on a login screen.  If that were the case, this function would probably be getting called within a certain limited range of times relative to the startup every time, restricting the amount of possible randomness; this is even worse if the sysclock resolution is exceptionally low.  So we just use TIME_UTC. */ )
-		return NULL;
-	srand((unsigned int)(ts.tv_nsec + ts.tv_sec));  // since the resolution of the system clock may not go into the nanoseconds
-	int filerand = rand();
-	int offsetrand = rand();
-
 	char * splash = malloc(length_restrictions[1]);
-		/* grab the splash and make any `sequences` adjustments */
+	if (splash == NULL) return NULL;
+	struct timespec start, current;
+	if (!timespec_get(&start, TIME_UTC /* Why TIME_UTC instead of TIME_MONOTONIC?  Imagine a situation where this library is being used in the startup of a system, perhaps as a message on a login screen.  If that were the case, this function would probably be getting called within a certain limited range of times relative to the startup every time, restricting the amount of possible randomness; this is even worse if the sysclock resolution is exceptionally low.  So we just use TIME_UTC. */ ))
+		return NULL;
+	srand((unsigned int)(start.tv_nsec + start.tv_sec));  // since the resolution of the system clock may not go into the nanoseconds
+	/* TODO: weights are not yet taken into account */
+	int filerandnum = 0; do {
+		filerandnum = rand();
+		if (timespec_get(&current, TIME_UTC), current.tv_sec - start.tv_sec > 5) {
+			free(splash); splash = NULL;
+			goto out_of_time;
+		}
+	} while (filerandnum >= RAND_MAX - valid_files_len); filerandnum %= valid_files_len;
+	int linerandnum = 0; do {
+		linerandnum = rand();
+		if (timespec_get(&current, TIME_UTC), current.tv_sec - start.tv_sec > 5) {
+			free(splash); splash = NULL;
+			goto out_of_time;
+		}
+	} while (linerandnum >= RAND_MAX - valid_files[filerandnum].lines_len && (linerandnum %= valid_files.[filerandnum.lines_len], valid_files[filerandnum].lines[linerandnum].len < length_restrictions[1]));
+
+	/* TODO: randnum pseudofiles are not yet taken into account */
+	char tmp_splash[valid_files[filerandnum].lines[linerandnum].len];
+	FILE * filestream = fopen("r", valid_files[filerandnum].file->f);
+	fseek(filestream, valid_files[filerandnum].lines[linerandnum].off, SEEK_SET);
+	fread(tmp_splash, 1, valid_files[filerandnum].lines[linerandnum].len, filestream);
+	fclose(filestream);
+
+		/* make any `sequences` adjustments */
 		/* add the header */
+	strcpy(splash, tmp_splash);
+out_of_time:
+#ifndef SPLASHTEXT$NODIRS
 	for (register size_t i = 0; i < extra_len; i++)
 		free(extra[i].f);
+#endif
 	return splash;
 }
 
