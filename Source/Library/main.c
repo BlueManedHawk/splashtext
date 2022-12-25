@@ -163,12 +163,16 @@ isvalidfile:
 		}
 	} while (linerandnum >= RAND_MAX - valid_files[filerandnum].lines_len && (linerandnum %= valid_files.[filerandnum.lines_len], valid_files[filerandnum].lines[linerandnum].len < length_restrictions[1]));
 
-	/* TODO: randnum pseudofiles are not yet taken into account */
 	char tmp_splash[valid_files[filerandnum].lines[linerandnum].len];
-	FILE * filestream = fopen("r", valid_files[filerandnum].file->f);
-	fseek(filestream, valid_files[filerandnum].lines[linerandnum].off, SEEK_SET);
-	fread(tmp_splash, 1, valid_files[filerandnum].lines[linerandnum].len, filestream);
-	fclose(filestream);
+	if (valid_files[filerandnum].file->f == NULL){
+		int r; do { r = rand(); } while (r >= RAND_MAX - valid_files[filerandnum].file->r); r %= valid_files[filerandnum].file->r;
+		sprintf(tmp_splash, "%d", r);
+	} else {
+		FILE * filestream = fopen("r", valid_files[filerandnum].file->f);
+		fseek(filestream, valid_files[filerandnum].lines[linerandnum].off, SEEK_SET);
+		fread(tmp_splash, 1, valid_files[filerandnum].lines[linerandnum].len, filestream);
+		fclose(filestream);
+	}
 
 		/* make any `sequences` adjustments */
 		/* add the header */
