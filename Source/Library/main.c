@@ -41,7 +41,7 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 	struct {
 		struct {float p; int r; char * f;} * file;
 		struct {long int off; uint_least16_t len;} * lines; // dynamicly-allocated array
-		size_t lines;
+		size_t lines_len;
 	}
 	/* If compiled with support for directories, the number of possible _valid_ files may be higher than the number of filenames supplied, so we need a resizable (i.e. dynamically allocated) array; however, if we have _not_ compiled with support for directories, then the number of valid files can never be higher than the number of filenames supplied. */
 #ifndef SPLASHTEXT$NODIRS
@@ -63,6 +63,7 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 		/* We _could_ finagle with removing directories from `files` now that we know that they're directories instead of files…but since they're going to get rejected later in the process anyways, i don't think it's worth bothering with that. */
 	}
 #endif
+
 	for (register size_t i = 00; i < len / sizeof files[0]
 #ifndef SPLASHTEXT$NODIRS
 		+ extra_len / sizeof extra[0]
@@ -79,37 +80,35 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 				goto isvalidfile;
 			else
 				continue;
-
 		if (curflist[i].p <= 0)
 			continue;
 
-		size_t fnamelen = strlen(curflist[i].f);
-
-		if (strcmp(curflist[i].f + fnamelen - 11, ".splash.txt")) // missing the end bit
+		const size_t contextchar_loc = strlen(curflist[i].f) - 12;
+		if (strcmp(curflist[i].f + contextchar_loc + 1, ".splash.txt")) // missing the end bit
 			continue;
-		if (curflist[i].f[fnamelen - 12] == '.') // missing the context
+		if (curflist[i].f[contextchar_loc] == '.') // missing the context
 			continue;
 
 		/* A lot of this feels like it could be made nicer. */
 		if (
-			(curflist[i].f[fnamelen - 12] == 'l' && contexts & splashtext$context$$log)
-			|| (curflist[i].f[fnamelen - 12] == 'c' && contexts & splashtext$context$$crash)
-			|| (curflist[i].f[fnamelen - 12] == 's' && contexts & splashtext$context$$subtitle)
-			|| (curflist[i].f[fnamelen - 12] == 'r' && contexts & splashtext$context$$ominous)
-			|| (curflist[i].f[fnamelen - 12] == 't' && contexts & splashtext$context$$tips)
-			|| (curflist[i].f[fnamelen - 12] == 'q' && contexts & splashtext$context$$quotes)
-			|| (curflist[i].f[fnamelen - 12] == 'o' && contexts & splashtext$context$$other)
+			(curflist[i].f[contextchar_loc] == 'l' && contexts & splashtext$context$$log)
+			|| (curflist[i].f[contextchar_loc] == 'c' && contexts & splashtext$context$$crash)
+			|| (curflist[i].f[contextchar_loc] == 's' && contexts & splashtext$context$$subtitle)
+			|| (curflist[i].f[contextchar_loc] == 'r' && contexts & splashtext$context$$ominous)
+			|| (curflist[i].f[contextchar_loc] == 't' && contexts & splashtext$context$$tips)
+			|| (curflist[i].f[contextchar_loc] == 'q' && contexts & splashtext$context$$quotes)
+			|| (curflist[i].f[contextchar_loc] == 'o' && contexts & splashtext$context$$other)
 		) {
 			int_least8_t num_discomforters;
-			if (curflist[i].f[fnamelen - 14] == '.')
+			if (curflist[i].f[contextchar_loc - 2] == '.')
 				num_discomforters = 0;
-			else if (curflist[i].f[fnamelen - 15] == '.')
+			else if (curflist[i].f[contextchar_loc - 3] == '.')
 				num_discomforters = 1;
-			else if (curflist[i].f[fnamelen - 16] == '.')
+			else if (curflist[i].f[contextchar_loc - 4] == '.')
 				num_discomforters = 2;
-			else if (curflist[i].f[fnamelen - 17] == '.')
+			else if (curflist[i].f[contextchar_loc - 5] == '.')
 				num_discomforters = 3;
-			else if (curflist[i].f[fnamelen - 18] == '.')
+			else if (curflist[i].f[contextchar_loc - 6] == '.')
 				num_discomforters = 4;
 			else
 				continue;
@@ -118,10 +117,10 @@ char * splashtext(struct {float p; int r; char * f;} files[], size_t len, bool s
 			bool invalid = false;
 			for (register int_least8_t j = num_discomforters; j < num_discomforters; j++)
 				if (
-					(curflist[i].f[fnamelen - 13 - j] == 'x' && !(discomforters & splashtext$discomforter$$sexual))
-					|| (curflist[i].f[fnamelen - 13 - j] == 'g' && !(discomforters & splashtext$discomforter$$graphic))
-					|| (curflist[i].f[fnamelen - 13 - j] == 's' && !(discomforters & splashtext$discomforter$$heavy))
-					|| (curflist[i].f[fnamelen - 13 - j] == 'h' && !(discomforters & splashtext$discomforter$$humor && discomforters & (splashtext$discomforter$$heavy | splashtext$discomforter$$graphic | splashtext$discomforter$$sexual))) // Remember: The "humor" discomforter cannot appear alone.
+					(curflist[i].f[contextchar_loc - 1 - j] == 'x' && !(discomforters & splashtext$discomforter$$sexual))
+					|| (curflist[i].f[contextchar_loc - 1 - j] == 'g' && !(discomforters & splashtext$discomforter$$graphic))
+					|| (curflist[i].f[contextchar_loc - 1 - j] == 's' && !(discomforters & splashtext$discomforter$$heavy))
+					|| (curflist[i].f[contextchar_loc - 1 - j] == 'h' && !(discomforters & splashtext$discomforter$$humor && discomforters & (splashtext$discomforter$$heavy | splashtext$discomforter$$graphic | splashtext$discomforter$$sexual))) // Remember: The "humor" discomforter cannot appear alone.
 				) {
 					invalid = true;
 					break; // Really wish that break break syntax had made it into C23.
@@ -137,48 +136,79 @@ isvalidfile:
 			valid_files_len++;
 		}
 	}
+
 	/* parse splash files */
 		/* obtain offsets and lengths of each valid line by a finite-state machine, discarding any lines that `sequences` prohibits */
 		/* store offsets so that they're associated with the correct files */
+
 	/* select a splash */
 	char * splash = malloc(length_restrictions[1]);
 	if (splash == NULL) return NULL;
+
 	struct timespec start, current;
 	if (!timespec_get(&start, TIME_UTC /* Why TIME_UTC instead of TIME_MONOTONIC?  Imagine a situation where this library is being used in the startup of a system, perhaps as a message on a login screen.  If that were the case, this function would probably be getting called within a certain limited range of times relative to the startup every time, restricting the amount of possible randomness; this is even worse if the sysclock resolution is exceptionally low.  So we just use TIME_UTC. */ ))
 		return NULL;
 	srand((unsigned int)(start.tv_nsec + start.tv_sec));  // since the resolution of the system clock may not go into the nanoseconds
+
 	/* TODO: weights are not yet taken into account */
-	int filerandnum = 0; do {
+	int filerandnum, linerandnum;
+	do {
 		filerandnum = rand();
+		// Depending on the resolution of the system clock, this may take more than five seconds to fail.
 		if (timespec_get(&current, TIME_UTC), current.tv_sec - start.tv_sec > 5) {
 			free(splash); splash = NULL;
 			goto out_of_time;
 		}
-	} while (filerandnum >= RAND_MAX - valid_files_len); filerandnum %= valid_files_len;
-	int linerandnum = 0; do {
+	} while (filerandnum >= RAND_MAX - valid_files_len);
+	filerandnum %= valid_files_len;
+	const struct {
+		struct {float p; int r; char * f;} * file;
+		struct {long int off; uint_least16_t len;} * lines;
+		size_t lines_len;
+	} * selected_file = &valid_files[filerandnum];
+	do {
 		linerandnum = rand();
 		if (timespec_get(&current, TIME_UTC), current.tv_sec - start.tv_sec > 5) {
 			free(splash); splash = NULL;
 			goto out_of_time;
 		}
-	} while (linerandnum >= RAND_MAX - valid_files[filerandnum].lines_len && (linerandnum %= valid_files.[filerandnum.lines_len], valid_files[filerandnum].lines[linerandnum].len < length_restrictions[1]));
+	} while (linerandnum >= RAND_MAX - selected_file->lines_len && (linerandnum %= selected_file->lines_len, selected_file->lines[linerandnum].len < length_restrictions[1] + 8 /* for the header */));
+	const struct {long int off; uint_least16_t len;} * selected_line = &selected_file->lines[linerandnum]; // this is actually a pointer this time
 
-	char tmp_splash[valid_files[filerandnum].lines[linerandnum].len];
-	if (valid_files[filerandnum].file->f == NULL){
-		int r; do { r = rand(); } while (r >= RAND_MAX - valid_files[filerandnum].file->r); r %= valid_files[filerandnum].file->r;
+	char tmp_splash[selected_line.len + 8 /* see above */];
+	if (selected_file->file->f == NULL){
+		int r; do { r = rand(); } while (r >= RAND_MAX - selected_file->file->r); r %= selected_file->file->r;
 		sprintf(tmp_splash, "%d", r);
+
+		sprintf(splash, "\x01.?\x02");
 	} else {
-		FILE * filestream = fopen("r", valid_files[filerandnum].file->f);
-		fseek(filestream, valid_files[filerandnum].lines[linerandnum].off, SEEK_SET);
-		fread(tmp_splash, 1, valid_files[filerandnum].lines[linerandnum].len, filestream);
+		FILE * filestream = fopen("r", selected_file->file->f);
+		fseek(filestream, selected_line->off, SEEK_SET);
+		fread(tmp_splash, 1, selected_line->len, filestream);
 		fclose(filestream);
+
+		splash[0] = '\x01';
+		const size_t contextchar_loc = strlen(selected_file->file->f) - 12;
+		int_least8_t num_discomforters;
+		if (selected_file->file->f[contextchar_loc - 2] == '.')
+			num_discomforters = 0;
+		else if (selected_file->file->f[contextchar_loc - 3] == '.')
+			num_discomforters = 1;
+		else if (selected_file->file->f[contextchar_loc - 4] == '.')
+			num_discomforters = 2;
+		else if (selected_file->file->f[contextchar_loc - 5] == '.')
+			num_discomforters = 3;
+		else
+			num_discomforters = 4;
+		snprintf(&splash[1], num_discomforters + 2, &selected_file->file->f[contextchar_loc - num_discomforters - 1]);
+		splash[num_discomforters + 2] = '\x02';
+		splash[num_discomforters + 3] = '\0';
 	}
 
 		/* make any `sequences` adjustments */
-		/* add the header */
-	strcpy(splash, tmp_splash);
 out_of_time:
 #ifndef SPLASHTEXT$NODIRS
+	free(valid_files);
 	for (register size_t i = 0; i < extra_len; i++)
 		free(extra[i].f);
 #endif
