@@ -122,7 +122,10 @@ Splashes may contain ECMA-48 Select Graphical Rendition sequences (introduced wi
 .B true
 for the
 .I sequences
-argument.  If you want to include some text only when such sequences are unavailable (for example, to surround a piece of text in underscores only when it can't be italicized), begin that substring with U+0091 U+0098 and terminate it with U+009C.  For the opposite, replace U+0091 with U+0092.  Splash Text will detect when an entire splash is delimited like this and only select it when it wouldn't be an empty line.
+argument or the escape-bracket/control sequence introducer is preceeded by a backslash.  If you want to include some text only when such sequences are unavailable (for example, to surround a piece of text in underscores only when it can't be italicized), begin that substring with U+0091 U+0098 and terminate it with U+009C.  For the opposite, replace U+0091 with U+0092.  Splash Text will detect when an entire splash is delimited like this and only select it when it wouldn't be an empty line.
+
+.B Warning:
+If a splash file contains an unmatched SOS, PU1-SOS, PU2-SOS, or ST, the file will be rejected.  These can nest, though i don't know why you'd want to do that.  You can include these sequences of codepoints literally by preceeding them with a backslash (this can also be done to include a literal backslash and, as mentioned above, an ignored SGR sequence).  You cannot do this with newlines; attempts to do so will result in a rejection of the file.  Please also keep in mind that Splash Text only recognizes SGR sequences, and not anything else specified as part of ECMA-48.  (However, private-use parameter bytes are okay.)
 
 Splash Text comes with a Vim syntax highlighting file that should have been installed if you've installed Splash Text.
 .SS Command-Line Wrapper Program
@@ -135,7 +138,7 @@ The weight is disambiguated from the pathname by preceeding it with a percent si
 Once you've gotten the splash text and are showing it to your user, you should render it in yellow, or in red if it's an ominous splash.  (These colors will automatically be added if you specify
 .B true
 for the
-.I escapes
+.I sequences
 argument.)  If you can't do this for whatever reason, you should make it clear in some other way that it's just a silly bit of splash text that shouldn't be taken seriously.  You are
 .B STRONGLY ENCOURAGED
 to use ominous splashes in some way.
@@ -196,4 +199,4 @@ I am aware that
 is kind of a large psuedo-namespace-esque prefix to use for this library.  But i'm not going to be the asshole who reserves a tiny prefix like `st` for something as small and silly as this.
 
 .SH AUTHORS
-This project is currently being maintained by Blue-Maned_Hawk, with contributions accepted.  The project is available at https://github.com/BlueManedHawk/splashtext.
+This project is currently being maintained by Blue-Maned_Hawk.  The project is available at https://github.com/BlueManedHawk/splashtext.

@@ -175,7 +175,7 @@ isvalidfile:
 	} while (linerandnum >= RAND_MAX - selected_file->lines_len && (linerandnum %= selected_file->lines_len, selected_file->lines[linerandnum].len < length_restrictions[1] + 8 /* for the header */));
 	const struct {long int off; uint_least16_t len;} * selected_line = &selected_file->lines[linerandnum]; // this is actually a pointer this time
 
-	char tmp_splash[selected_line.len + 8 /* see above */];
+	char tmp_splash[selected_line->len + 8 /* see above */];
 	if (selected_file->file->f == NULL){
 		int r; do { r = rand(); } while (r >= RAND_MAX - selected_file->file->r); r %= selected_file->file->r;
 		sprintf(tmp_splash, "%d", r);
@@ -205,7 +205,73 @@ isvalidfile:
 		splash[num_discomforters + 3] = '\0';
 	}
 
-		/* make any `sequences` adjustments */
+	enum { // NOTE:  Once 2023 comes about, this has got to be a uint_least8_t.
+		stack$$comment,
+		stack$$sequences,
+		stack$$nosequences
+	} stack[] = NULL;
+	size_t stack_len = 0;
+	register size_t i_final = strlen(splash);
+	for (register size_t i_tmp = 0; i_tmp < selected_line->len; i_tmp++, i_final++) switch (tmp_splash[i_tmp]) {
+	case '\\':
+		if (stack[stack_len - 1] == stack$$comment || (stack[stack_len - 1] == stack$$sequences && !sequences) || (stack[stack_len - 1] == stack$$nosequences && sequences)) {
+			if (!strncmp(&tmp_splash[i_tmp + 1], "\xC2\x9C", 2)) {
+				i_tmp += 3;  i_final += 2;
+				continue;
+			}
+		}
+		if (!strncmp(tmp_splash[i_tmp + 1], "\xC2\x91", 2) || !strncmp(tmp_splash[i_tmp + 1], "\xC2\x92", 2)) { // Special handling for the PU1-SOS and PU2-SOS sequences; otherwise, they'd be interpreted as a comment that just happens to be preceeded by a private-use control character.
+			strncat(splash, &tmp_splash[i_tmp + 1], 2);
+			i_tmp += 3;  i_final += 2;
+			continue;
+		}
+		goto normal;
+	case '\xC2':
+		switch (tmp_splash[i_tmp + 1]) {
+		case '\x9B':
+isseq:
+			register int j = i_tmp + 2;
+			for (; tmp_splash[j] < '\x40'; j++);
+			if (tmp_splash[j] != 'm' || !sequences)
+				goto normal;
+			strncpy(&splash[i_final], &tmp_splash[i_tmp], j - i_tmp);
+			i_final += j - i_tmp;
+			i_tmp += j - i_tmp;
+			continue;
+		case '\x91':
+			if (!strncmp(&tmp_splash[i_tmp + 2], "\xC2\x98", 2)) {
+				stack_len++;
+				realloc(stack, stack_len * sizeof stack[0]);
+				stack[stack_len - 1] = stack$$nosequences;
+			}
+			i_tmp += 2;
+			continue;
+		case '\x92':
+			if (!strncmp(&tmp_splash[i_tmp + 2], "\xC2\x98", 2)) {
+				stack_len++;
+				realloc(stack, stack_len * sizeof stack[0]);
+				stack[stack_len - 1] = stack$$sequences;
+			}
+			i_tmp += 2;
+			continue;
+		case '\x98':
+			stack_len++;
+			realloc(stack, stack_len * sizeof stack[0]);
+			stack[stack_len - 1] = stack$$comment;
+			i_tmp += 2;
+			continue;
+		}
+	case '\x1b':
+		if (tmp_splash[i_tmp + 1] == '[') goto isseq;
+		else goto normal;
+	default:
+normal:
+		if (stack[stack_len - 1] == stack$$comment || (stack[stack_len - 1] == stack$$sequences && !sequences) || (stack[stack_len - 1] == stack$$nosequences && sequences))
+			continue;
+		else
+			splash[i_final] = tmp_splash[i_tmp];
+	}
+
 out_of_time:
 #ifndef SPLASHTEXT$NODIRS
 	free(valid_files);
