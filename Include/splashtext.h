@@ -42,6 +42,12 @@ enum splashtext$discomforter {
 };
 #pragma clang attribute pop
 
-extern char * splashtext(struct {float p; int r; char * f;}[], size_t, bool, uint_least16_t[2], enum splashtext$discomforter, enum splashtext$context);
+struct splashtext$filestruct {
+	float weight;
+	int rnpf_len; // `rnpf` for "*r*and*n*um *p*seudo*f*ile""
+	char * filename;
+}
+
+extern char * splashtext(struct splashtext$filestruct[], size_t, bool, uint_least16_t[2], enum splashtext$discomforter, enum splashtext$context);
 
 #endif/*ndef SPLASHTEXT_H*/
