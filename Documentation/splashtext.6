@@ -4,9 +4,20 @@ splashtext \- a unified system for splash text, freely usable by any program
 .SH SYNOPSIS
 .B #include """splashtext.h"""
 
-.BI "char * splashtext(struct {float p; int r; char * f;} " files "[], size_t " len ", bool " sequences ", uint_least16_t " length_restrictions "[2], enum splashtext$context " contexts ", enum splashtext$discomforter " discomforters ");"
+.BI "char * splashtext(const struct splashtext$filestruct " files "[], size_t " len ", bool " sequences ", const uint_least16_t " length_restrictions "[2], enum splashtext$context " contexts ", enum splashtext$discomforter " discomforters ");"
 
-.\" I have no idea if this is the correct way to manpage enums.
+.\" I have no idea if this is the correct way to manpage structs and enums.
+
+.B struct splashtext$filestruct {
+.RS
+.BI "float " weight ;
+.br
+.BI "int " rnpf_len ;
+.br
+.BI "char * " filename ;
+.RE
+.B }
+
 .B enum splashtext$context {
 .I /* Flag enum */
 .RS
@@ -43,19 +54,23 @@ Splash Text is a unified system for splash text, freely usable by any program.  
 Splash Text works by taking in an array of filenames and randomly (but in a way that is
 .BR "not cryptographically secure!" )
 selecting a splash from one of them.  The
-.I .f
+.I .filename
 member of an element of
 .I files
 is a pointer to a filename, and the
-.I .p
+.I .weight
 element is the weight you desire to give to that particular file (you can set this to zero for all files you supply if you don't care about this). You can also set
-.I .f
+.I .filename
 to be a null pointer, in which case Splash Text will pretend that it's a file where each of the splashes is a number from 0 to
-.I .r
+.I .rnpf_len
 (the returned string has information that allows you to tell whether the splash is a number from one of these pseudofiles).  The maximum value for
-.I .r
+.I .rnpf_len
 is
 .BR RAND_MAX .
+(The name
+.I .rnpf_len
+comes from the phrase
+.BR "r" and "n" um "p" suedo "f" ile.)
 The argument
 .I len
 specifies the length of the array; note that this is the
@@ -68,13 +83,13 @@ not
 If your system is POSIX compliant and you didn't define the
 .B SPLASHTEXT$NODIRS
 macro when building, you can also set
-.I .f
+.I .filename
 to be the name of a directory, such as
 .BR /usr/local/share/splashtext/ ,
 which happens to be where the presupplied splash files are stored (assuming you installed Splash Text, that is); in this case, only the files that end in
 .I .splash.txt
 will be used to get splashes (so you can just specify a mixed assets directory and you'll be fine), and the weight given in
-.I .p
+.I .weight
 will be for the
 .IR "entire directory" .
 Directories are scanned for splash files recursively.
@@ -125,9 +140,9 @@ for the
 argument or the escape-bracket/control sequence introducer is preceeded by a backslash.  If you want to include some text only when such sequences are unavailable (for example, to surround a piece of text in underscores only when it can't be italicized), begin that substring with U+0091 U+0098 and terminate it with U+009C.  For the opposite, replace U+0091 with U+0092.  Splash Text will detect when an entire splash is delimited like this and only select it when it wouldn't be an empty line.
 
 .B Warning:
-If a splash file contains an unmatched SOS, PU1-SOS, PU2-SOS, or ST, the file will be rejected.  These can nest, though i don't know why you'd want to do that.  You can include these sequences of codepoints literally by preceeding them with a backslash (this can also be done to include a literal backslash and, as mentioned above, an ignored SGR sequence).  You cannot do this with newlines; attempts to do so will result in a rejection of the file.  Please also keep in mind that Splash Text only recognizes SGR sequences, and not anything else specified as part of ECMA-48.  (However, private-use parameter bytes are okay.)
+If a splash file contains an unmatched SOS, PU1-SOS, PU2-SOS, or ST, the file will be rejected.  These can nest, though i don't know why you'd want to do that.  You can include these sequences of codepoints literally by preceeding them with a backslash (this can also be done to include a literal backslash and, as mentioned above, an ignored SGR sequence).  You cannot do this with newlines; attempts to do so will result in a rejection of the file.  You also can't put newlines in a sequences-only or sequences-prohibited substring, but you can put them in comment substrings.  Please also keep in mind that Splash Text only recognizes SGR sequences, and not anything else specified as part of ECMA-48.  (However, private-use parameter bytes are okay.)
 
-Splash Text comes with a Vim syntax highlighting file that should have been installed if you've installed Splash Text.
+Splash Text comes with a Vim syntax highlighting file that you can install if you want.
 .SS Command-Line Wrapper Program
 The command-line wrapper program has syntax as follows:
 .RS

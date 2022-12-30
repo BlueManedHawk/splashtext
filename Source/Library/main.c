@@ -37,7 +37,7 @@ struct splashtext$static$counted_line {
 };
 
 /* TODO:  There are a lot of situations where it would make more sense to use `typeof` than explicitly specifying the type.  Once 2023 comes about, let's do that. */
-char * splashtext(struct splashtext$filestruct files[], size_t len, bool sequences, uint_least16_t length_restrictions[2], enum splashtext$context contexts, enum splashtext$discomforter discomforters)
+char * splashtext(const struct splashtext$filestruct files[], size_t len, bool sequences, const uint_least16_t length_restrictions[2], enum splashtext$context contexts, enum splashtext$discomforter discomforters)
 {
 	if (length_restrictions[1] <= length_restrictions[0])
 		return NULL;
@@ -138,7 +138,7 @@ char * splashtext(struct splashtext$filestruct files[], size_t len, bool sequenc
 isvalidfile:
 #ifndef SPLASHTEXT$NODIRS
 			void * n = realloc(valid_files, (valid_files_len + 1) * sizeof valid_files[0]);
-			if (n == NULL) {
+			if (n == NULL)
 				goto exit_failurously;
 			else
 				valid_files = n;
@@ -149,8 +149,216 @@ isvalidfile:
 	}
 
 	/* parse splash files */
-		/* obtain offsets and lengths of each valid line by a finite-state machine, discarding any lines that `sequences` prohibits */
-		/* store offsets so that they're associated with the correct files */
+	enum { // NOTE:  Once 2023 comes about, this has got to be a uint_least8_t.  XXX:  This stack gets used later on in the code.
+		stack$$comment,
+		stack$$sequences,
+		stack$$nosequences
+	} stack[] = NULL;
+	size_t stack_len = 0;
+#define PUSHSTACK(n) do {\
+	stack_len++;\
+	void * n = realloc(stack, stack_len * sizeof stack[0]);\
+	if (n == NULL) {\
+		goto exit_failurously;\
+	}\
+	stack[stack_len - 1] = n;\
+} while (false)
+#define POPSTACK() do {\
+	stack_len--;\
+	if (stack_len == 0) {\
+		/* since reallocing to 0 is undefined… */\
+		free(stack);\
+		stack = NULL;\
+	} else {\
+		void * n = realloc(stack, stack_len * sizeof stack[0]);\
+		if (n == NULL)\
+			goto exit_failurously;\
+	}\
+} while (false)
+#define STACKTOP stack[stack_len - 1]
+
+	for (register size_t i = 0; i < valid_files_len; i++) {
+		FILE * file = fopen(valid_files[i].file->filename, "rb");
+		bool invalid_file = false;
+		uint_least16_t llen = 0;
+		bool potentially_sequence_prohibited = false;
+		bool just_saw_newline = true;
+		bool whitespace_at_head = true;
+		uint_least16_t whitespace_amount = 0;
+		uint_least16_t lineno = 0;
+
+		valid_files[i].lines = NULL;
+		/* It is at this point that i REALLY wish that FILE *s weren't an opaque type. */
+		for (register char c; !invalid_file && (c = fgetc(file)) != EOF;) switch (c) {
+		case '\xE1':
+			char tmp[3];
+			llen++;
+			if (!strncmp(fgets(tmp, 2, file), 2, "\x82\x8E") || !strcmp(tmp, 2, "\x9A\x80"))
+				goto space; // TO SPAAAAAAAAACE!!!!!!
+			goto boring_character;
+		case '\xE2':
+			c = fgetc(file);
+			llen++;
+			switch (c) {
+			case '\x80':
+				c = fgetc(file);
+				switch (c) {
+				case '\xA9':
+				case '\xA8':
+					goto newline;
+
+				case '\x80':
+				case '\x81':
+				case '\x82':
+				case '\x83':
+				case '\x84':
+				case '\x85':
+				case '\x86':
+				case '\x87':
+				case '\x88':
+				case '\x89':
+				case '\x8A':
+				case '\x8B':
+				case '\x8C':
+				case '\x8D':
+				case '\xAF':
+					goto space;
+
+				goto boring_character;
+				}
+			case '\x81':
+				c = fgetc(file);
+				if (c == '\x9F' || c == '\xA0')
+					goto space;
+				goto boring_character;
+			case '\x85':
+				if ((c = fgetc(file)) == '\x9f' || c == '\xA0') //hooray for short-circuiting!
+					goto space;
+				goto boring_character;
+			case '\xA0':
+				if ((c = fgetc(file)) == '\x80')
+					goto space;
+				goto boring_character;
+			}
+		case '\xE3':
+			char tmp[3];
+			llen++;
+			if (!strncmp(fgets(tmp, 2, file), 2, "\x80\x80") || !strcmp(tmp, 2, "\x85\xA4"))
+				goto space;
+			goto boring_character;
+		case '\xEF':
+			char tmp[3];
+			llen++;
+			if (!strncmp(fgets(tmp, 2, file), 2, "\xBB\xBF") || !strcmp(tmp, 2, "\xBE\xA0"))
+				goto space;
+			goto boring_character;
+
+		case '\xC2':
+			c = fgetc(file);
+			switch (c) {
+			case '\x85':
+				goto newline;
+			case '\xA0':
+				goto space;
+
+			case '\x91':
+				llen++;
+				if ((c = fgetc(file)) == '\xC2' && (llen++, c = fgetc(file)) == '\x98') {
+					PUSHSTACK(stack$$sequences);
+					if (!sequences && len == 2)
+						potentially_sequence_prohibited = true;
+				}
+				continue;
+			case '\x92':
+				llen++;
+				if ((c = fgetc(file)) == '\xC2' && (llen++, c = fgetc(file)) == '\x98') {
+					PUSHSTACK(stack$$nosequences);
+					if (sequences && len == 2)
+						potentially_sequence_prohibited = true;
+				}
+				continue;
+			case '\x98':
+				llen++;
+				PUSHSTACK(stack$$comment);
+				continue;
+			case '\x9C':
+				llen++;
+				if (stack != NULL)
+					POPSTACK();
+				else
+					invalid_file = true;
+				continue;
+			}
+
+		case '\n':
+		case '\r':
+		case '\f':
+		case '\v':
+newline:
+			if (STACKTOP == stack$$sequences || STACKTOP == stack$$nosequences) {
+				invalid_file = true;
+				continue;
+			}
+			if (!just_saw_newline) {
+				just_saw_newline = true;
+				valid_files[i].lines[lineno].len = potentially_whitespace_prohibited ? 0 : llen - whitespace_amount;
+				llen = 0;
+				c = fgetc(file);
+				lineno++;
+				whitespace_at_head = true;
+				whitespace_amount = 0;
+			}
+			continue;
+
+		case ' ':
+		case '\t':
+space:
+			whitespace_amount++;
+			continue;
+
+		case '\\':
+			c = fgetc(file);
+			if (c >= '\xC2' && c <= '\xDF') {
+				c = fgetc(file);
+				llen += 2;
+				continue;
+			} else if (c >= '\xE0' && c <= '\xEF') {
+				c = fgetc(file);
+				c = fgetc(file);
+				llen += 3;
+				continue;
+			} else if (c >= '\xF0' && c <= '\xF4') {
+				c = fgetc(file);
+				c = fgetc(file);
+				c = fgetc(file);
+				llen += 4;
+				continue;
+			}
+
+		default:
+			llen++;
+boring_character:
+			if (whitespace_at_head) {
+				whitespace_at_head = false;
+				valid_files[i].lines[lineno].off = ftell(file);
+			}
+			fseek(file, -2, SEEK_CUR);
+			char tmp[3];
+			potentially_sequence_prohibited = strncmp(fgets(tmp, 2, file), 2, "\xC2\x9C") ? potentially_sequence_prohibited : false;
+		}
+
+		if (stack != NULL) {
+			invalid_file = true;
+			while (stack != NULL)
+				POPSTACK();
+		}
+
+		if (invalid_file) {
+			valid_files[i].file = NULL;
+		}
+
+		fclose(file);
+	}
 
 	/* select a splash */
 	char * splash = malloc(length_restrictions[1]);
@@ -172,8 +380,7 @@ isvalidfile:
 			goto exit_failurously;
 		if (current.tv_sec - start.tv_sec > 5)
 			goto exit_failurously;
-	} while (filerandnum >= RAND_MAX - valid_files_len);
-	filerandnum %= valid_files_len;
+	} while (filerandnum >= RAND_MAX - valid_files_len && valid_files[(filerandnum %= valid_files_len)].file != NULL);
 	const struct {
 		struct splashtext$filestruct * file;
 		struct splashtext$static$counted_line * lines;
@@ -185,7 +392,7 @@ isvalidfile:
 			goto exit_failurously;
 		if (current.tv_sec - start.tv_sec > 5)
 			goto exit_failurously;
-	} while (linerandnum >= RAND_MAX - selected_file->lines_len && (selected_file->lines[(linerandnum %= selected_file->lines_len)].len < length_restrictions[1] + 8 /* for the header */));
+	} while (linerandnum >= RAND_MAX - selected_file->lines_len && selected_file->lines[(linerandnum %= selected_file->lines_len)].len < length_restrictions[1] + 8 /* for the header */ && selected_file->lines[linerandnum].len != 0);
 	const struct splashtext$static$counted_line * selected_line = &selected_file->lines[linerandnum]; // this is actually a pointer this time
 
 	char tmp_splash[selected_line->len + 8 /* see above */];
@@ -221,34 +428,6 @@ isvalidfile:
 		splash[num_discomforters + 2] = '\x02';
 		splash[num_discomforters + 3] = '\0';
 	}
-
-	enum { // NOTE:  Once 2023 comes about, this has got to be a uint_least8_t.
-		stack$$comment,
-		stack$$sequences,
-		stack$$nosequences
-	} stack[] = NULL;
-	size_t stack_len = 0;
-#define PUSHSTACK(n) do {\
-	stack_len++;\
-	void * n = realloc(stack, stack_len * sizeof stack[0]);\
-	if (n == NULL) {\
-		goto exit_failurously;\
-	}\
-	stack[stack_len - 1] = n;\
-} while (false)
-#define POPSTACK() do {\
-	stack_len--;\
-	if (stack_len == 0) {\
-		/* since reallocing to 0 is undefined… */\
-		free(stack);\
-		stack = NULL;\
-	} else {\
-		void * n = realloc(stack, stack_len * sizeof stack[0]);\
-		if (n == NULL)\
-			goto exit_failurously;\
-	}\
-} while (false)
-#define STACKTOP stack[stack_len - 1]
 
 	register size_t i_final = strlen(splash);
 	for (register size_t i_tmp = 0; i_tmp < selected_line->len; i_tmp++, i_final++) switch (tmp_splash[i_tmp]) {
@@ -306,6 +485,7 @@ basecase:
 	}
 #undef PUSHSTACK
 #undef POPSTACK
+#undef STACKTOP
 
 if (false) { // This is unbelievably stupid.
 exit_failurously:  // This is definitely a real word.
