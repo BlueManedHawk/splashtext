@@ -148,7 +148,6 @@ isvalidfile:
 		}
 	}
 
-	/* parse splash files */
 	enum { // NOTE:  Once 2023 comes about, this has got to be a uint_least8_t.  XXX:  This stack gets used later on in the code.
 		stack$$comment,
 		stack$$sequences,
@@ -371,8 +370,22 @@ boring_character:
 	}
 	srand((unsigned int)(start.tv_nsec + start.tv_sec));  // since the resolution of the system clock may not go into the nanoseconds
 
-	/* TODO: weights are not yet taken into account */
 	int filerandnum, linerandnum;
+	/* XXX:  STUPID MATHS AHEAD
+	*
+	* Basically, to calculate the weights, what we do is we go through the list of weights, find the smallest one, and have the associated file occur in a list exactly once.  The other files are then given a certain number of entries based upon how the smallest weight divides into it.  */
+	float smallest_weight = FLT_MAX;
+	float total_weight = 0.0f;
+	for (register size_t i = 0; i < valid_files_len; i++) {
+		total_weight += valid_files[i].file->weight;
+		smallest_weight = valid_files[i].file->weight < smallest_weight ? valid_files[i].file->weight : smallest_weight;
+	}
+	size_t weighted_file_list[total_weight / smallest_weight];
+	for (register size_t i = 0, j = 0; i < valid_files_len; i++) {
+		for (register size_t k = 0; k < valid_files[i].file->weight / smallest_weight; j++, k++)
+			weighted_file_list[j] = i;
+	}
+
 	do {
 		filerandnum = rand();
 		// Depending on the resolution of the system clock, this may take more than five seconds to fail.
@@ -380,12 +393,12 @@ boring_character:
 			goto exit_failurously;
 		if (current.tv_sec - start.tv_sec > 5)
 			goto exit_failurously;
-	} while (filerandnum >= RAND_MAX - valid_files_len && valid_files[(filerandnum %= valid_files_len)].file != NULL);
+	} while (filerandnum >= RAND_MAX - (sizeof weighted_file_list / sizeof weighted_file_list[0]) && valid_files[weighted_file_list[(filerandnum %= valid_files_len)]].file != NULL);
 	const struct {
 		struct splashtext$filestruct * file;
 		struct splashtext$static$counted_line * lines;
 		size_t lines_len;
-	} * selected_file = &valid_files[filerandnum];
+	} * selected_file = &valid_files[weighted_files_list[filerandnum]];
 	do {
 		linerandnum = rand();
 		if (!timespec_get(&current, TIME_UTC))
