@@ -17,12 +17,14 @@
 
 /* This is the main file for the `splashtext` program. */
 
-#include "splashtext.h"
+#include "../../Include/splashtext.h"
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <limits.h>
+#include <errno.h>
 
 int main(int argc, char * argv[]) {
 	enum splashtext$context contexts = 0;
@@ -72,17 +74,17 @@ int main(int argc, char * argv[]) {
 			sequences = true;
 		} else if (!strcmp(argv[i], "--minlen")) {
 			/* the minlen and maxlen checks could be a macro, but like. this is only repeated twice.  if it was more i'd consider it but just twice is fine i think */
-			char endptr[strlen(argv[i+1]) + 1];
+			char * endptr[strlen(argv[i+1]) + 1];
 			signed long long minlen = strtoll(argv[i+1], endptr, 0);
-			if (minlen < 0 || (minlen == LLONG_MAX && errno = ERANGE) || endptr[0] != '\0' /* we avoid translating anything that isn't just a number to be safe */)
+			if (minlen < 0 || (minlen == LLONG_MAX && errno == ERANGE) || *endptr[0] != '\0' /* we avoid translating anything that isn't just a number to be safe */)
 				fprintf(stderr, "warning: unrecognized argument to --minlen is ignored\n");
 			else
 				retlen[0] = minlen;
 			i++;
 		} else if (!strcmp(argv[i], "--maxlen")) {
-			char endptr[strlen(argv[i+1]) + 1];
+			char * endptr[strlen(argv[i+1]) + 1];
 			signed long long maxlen = strtoll(argv[i+1], endptr, 0);
-			if (maxlen < 0 || (maxlen == LLONG_MAX && errno = ERANGE) || endptr[0] != '\0' /* see above */)
+			if (maxlen < 0 || (maxlen == LLONG_MAX && errno == ERANGE) || *endptr[0] != '\0' /* see above */)
 				fprintf(stderr, "warning: unrecognized argument to --maxlen `%s` is ignored\n", argv[i+1]);
 			else
 				retlen[1] = maxlen;
@@ -114,8 +116,9 @@ int main(int argc, char * argv[]) {
 				else if (argv[i][0] == '-') {
 					i--; /* to allow the main for loop to check what kind of option this is that we've just come across*/
 					break;
-				} else
-					fprintf(stderr, "warning: unrecognized discomforter `%s` is ignored\n", argv[i])
+				} else {
+					fprintf(stderr, "warning: unrecognized discomforter `%s` is ignored\n", argv[i]);
+				}
 				#undef ADD_CONTENT_IF_SUPPLIED
 			}
 		} else {
@@ -123,33 +126,33 @@ int main(int argc, char * argv[]) {
 		}
 	}
 
-	struct {float p; int r; char * f;} pathnames[argc - i];
+	struct splashtext$filestruct pathnames[argc - i];
 
 	register int j = 0;
 	for (; i < argc; i++, j++) {
 		if (argv[i][0] == '/') {
-			pathnames[j].f = NULL;
-			char endptr[strlen(argv[i]) + 1];
-			signed int val = strtoi(argv[i] + 1, endptr, 0);
-			if (val < 0 || (val == INT_MAX && errno = ERANGE) || endptr[0] != '\0' /* see above */)
+			pathnames[j].filename = NULL;
+			char * endptr[strlen(argv[i]) + 1];
+			signed long val = (int)strtol(argv[i] + 1, endptr, 0);
+			if (val < 0 || ((val == LONG_MAX || val == LONG_MIN) && errno == ERANGE) || *endptr[0] != '\0' /* see above */)
 				fprintf(stderr, "warning: unrecognized value for numerical pseudofile in argument `%s` is ignored\n", argv[i]);
 			else
-				pathnames[j].r = val;
+				pathnames[j].rnpf_len = val;
 		} else if (argv[i][0] == '%') {
-			char endptr[strlen(argv[i]) + 1];
-			pathnames[j].p = strtof(argv[i] + 1, endptr);
-			if (endptr[0] != '\0')
+			char * endptr[strlen(argv[i]) + 1];
+			pathnames[j].weight = strtof(argv[i] + 1, endptr);
+			if (*endptr[0] != '\0')
 				fprintf(stderr, "warning: unrecognized value for chance in argument `%s` is ignored\n", argv[i]);
 			j--;
 		} else if (argv[i][0] == '\\'){
-			pathnames[j].f = argv[i] + 1;
+			pathnames[j].filename = argv[i] + 1;
 		} else {
-			pathnames[j].f = argv[i];
+			pathnames[j].filename = argv[i];
 		}
 	}
 	j++;
 
-	char * splash = splashtext(pathnames, (size_t)j * sizeof struct {float p; int r; char * f;}, sequences, retlen, contexts, discomforters);
+	char * splash = splashtext(pathnames, (size_t)j * sizeof (struct splashtext$filestruct), sequences, retlen, contexts, discomforters);
 	if (splash == NULL)
 		return 2;
 

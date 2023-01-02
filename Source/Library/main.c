@@ -17,7 +17,12 @@
 
 /* This is the main file for `libsplashtext.a`. */
 
-#include "splashtext.h"
+/* For inexplicable reasons, gcc assumes that we're using some obsolete C standard when called from the makefile by default.  Since the `-std=???` argument isn't standardized by POSIX, we are forced to use this workaround instead. */
+#ifdef __GNUC__
+#define _ISOC11_SOURCE
+#endif
+
+#include "../../Include/splashtext.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
@@ -30,11 +35,24 @@
 #	endif
 #	include <sys/stat.h>
 #endif
+#include <string.h>
+#include <stdio.h>
+#include <float.h>
 
 struct splashtext$static$counted_line {
 	long int off;
 	uint_least16_t len;
 };
+
+struct splashtext$static$frivilous_struct {
+	struct splashtext$filestruct * file;
+	struct splashtext$static$counted_line * lines; // dynamicly-allocated array
+	size_t lines_len;
+};
+
+#ifndef SPLASHTEXT$NODIRS
+static void splashtext$static$recurse_directory(const char *, float, struct splashtext$filestruct[], size_t *);
+#endif
 
 /* TODO:  There are a lot of situations where it would make more sense to use `typeof` than explicitly specifying the type.  Once 2023 comes about, let's do that. */
 char * splashtext(const struct splashtext$filestruct files[], size_t len, bool sequences, const uint_least16_t length_restrictions[2], enum splashtext$context contexts, enum splashtext$discomforter discomforters)
@@ -44,11 +62,7 @@ char * splashtext(const struct splashtext$filestruct files[], size_t len, bool s
 	if (contexts == 0)
 		return NULL;
 
-	struct {
-		struct splashtext$filestruct * file;
-		struct splashtext$static$counted_line * lines; // dynamicly-allocated array
-		size_t lines_len;
-	}
+	struct splashtext$static$frivilous_struct
 	/* If compiled with support for directories, the number of possible _valid_ files may be higher than the number of filenames supplied, so we need a resizable (i.e. dynamically allocated) array; however, if we have _not_ compiled with support for directories, then the number of valid files can never be higher than the number of filenames supplied. */
 #ifndef SPLASHTEXT$NODIRS
 	* valid_files = NULL;
@@ -62,35 +76,44 @@ char * splashtext(const struct splashtext$filestruct files[], size_t len, bool s
 	size_t extra_len = 0;
 	for (register size_t i = 00; i < len / sizeof files[0]; i++) {
 		struct stat file_stat;
-		if (!stat(files[i].f, &file_stat))
+		if (!stat(files[i].filename, &file_stat))
 			continue;  // We continue and hope that it wasn't important.
 		if (!S_ISREG(file_stat.st_mode))
 			if (!S_ISDIR(file_stat.st_mode))
-				recurse_directory(files[i].f, files[i].p, extra, &extra_len);  // this has to be a separate subroutine so that recursion can be done
+				splashtext$static$recurse_directory(files[i].filename, files[i].weight, extra, &extra_len);  // this has to be a separate subroutine so that recursion can be done
 		/* We _could_ finagle with removing directories from `files` now that we know that they're directories instead of files…but since they're going to get rejected later in the process anyways, i don't think it's worth bothering with that. */
 	}
 #endif
+
+	char * splash = NULL;
+	char * tmp_splash = NULL;
 
 	for (register size_t i = 00; i < len / sizeof files[0]
 #ifndef SPLASHTEXT$NODIRS
 		+ extra_len / sizeof extra[0]
 #endif
 		; i++) {
-		struct splashtext$filestruct curflist[] =
+		const struct splashtext$filestruct * curflist =
 #ifndef SPLASHTEXT$NODIRS
-			i >= len / sizeof files ? extra :
+			i >= len / sizeof files[0] ? extra :
 #endif
 			files;
 
 		if (curflist[i].filename == NULL)
-			if (curflist.rnpf_len > 0)
+#ifdef __GNUC__  // We could just use `#pragma GCC diagnostic …`, but this is more fun.
+		{
+#endif
+			if (curflist[i].rnpf_len > 0)
 				goto isvalidfile;
 			else
 				continue;
+#ifdef __GNUC__
+		}
+#endif
 		if (curflist[i].weight <= 0)
 			continue;
 
-		const size_t contextchar_loc = strlen(curflist[i].f) - 12;
+		const size_t contextchar_loc = strlen(curflist[i].filename) - 12;
 		if (strcmp(curflist[i].filename + contextchar_loc + 1, ".splash.txt")) // missing the end bit
 			continue;
 		if (curflist[i].filename[contextchar_loc] == '.') // missing the context
@@ -103,7 +126,7 @@ char * splashtext(const struct splashtext$filestruct files[], size_t len, bool s
 			|| (curflist[i].filename[contextchar_loc] == 's' && contexts & splashtext$context$$subtitle)
 			|| (curflist[i].filename[contextchar_loc] == 'r' && contexts & splashtext$context$$ominous)
 			|| (curflist[i].filename[contextchar_loc] == 't' && contexts & splashtext$context$$tips)
-			|| (curflist[i].filename[contextchar_loc] == 'q' && contexts & splashtext$context$$quotes)
+			|| (curflist[i].filename[contextchar_loc] == 'q' && contexts & splashtext$context$$quote)
 			|| (curflist[i].filename[contextchar_loc] == 'o' && contexts & splashtext$context$$other)
 		) {
 			int_least8_t num_discomforters;
@@ -120,7 +143,6 @@ char * splashtext(const struct splashtext$filestruct files[], size_t len, bool s
 			else
 				continue;
 
-			enum splashtext$discomforter thisfile_discomforters;
 			bool invalid = false;
 			for (register int_least8_t j = num_discomforters; j < num_discomforters; j++)
 				if (
@@ -136,6 +158,7 @@ char * splashtext(const struct splashtext$filestruct files[], size_t len, bool s
 				continue;
 
 isvalidfile:
+			;
 #ifndef SPLASHTEXT$NODIRS
 			void * n = realloc(valid_files, (valid_files_len + 1) * sizeof valid_files[0]);
 			if (n == NULL)
@@ -143,7 +166,7 @@ isvalidfile:
 			else
 				valid_files = n;
 #endif
-			valid_files[valid_files_len].file = &curflist[i];
+			valid_files[valid_files_len].file = (struct splashtext$filestruct *)&curflist[i];
 			valid_files_len++;
 		}
 	}
@@ -152,15 +175,15 @@ isvalidfile:
 		stack$$comment,
 		stack$$sequences,
 		stack$$nosequences
-	} stack[] = NULL;
+	} * stack = NULL;  //dynarr
 	size_t stack_len = 0;
-#define PUSHSTACK(n) do {\
+#define PUSHSTACK(i) do {\
 	stack_len++;\
 	void * n = realloc(stack, stack_len * sizeof stack[0]);\
 	if (n == NULL) {\
 		goto exit_failurously;\
 	}\
-	stack[stack_len - 1] = n;\
+	stack[stack_len - 1] = i;\
 } while (false)
 #define POPSTACK() do {\
 	stack_len--;\
@@ -188,11 +211,11 @@ isvalidfile:
 
 		valid_files[i].lines = NULL;
 		/* It is at this point that i REALLY wish that FILE *s weren't an opaque type. */
+		char tmp[3];
 		for (register char c; !invalid_file && (c = fgetc(file)) != EOF;) switch (c) {
 		case '\xE1':
-			char tmp[3];
 			llen++;
-			if (!strncmp(fgets(tmp, 2, file), 2, "\x82\x8E") || !strcmp(tmp, 2, "\x9A\x80"))
+			if (!strncmp(fgets(tmp, 2, file), "\x82\x8E", 2) || !strncmp(tmp, "\x9A\x80", 2))
 				goto space; // TO SPAAAAAAAAACE!!!!!!
 			goto boring_character;
 		case '\xE2':
@@ -240,15 +263,13 @@ isvalidfile:
 				goto boring_character;
 			}
 		case '\xE3':
-			char tmp[3];
 			llen++;
-			if (!strncmp(fgets(tmp, 2, file), 2, "\x80\x80") || !strcmp(tmp, 2, "\x85\xA4"))
+			if (!strncmp(fgets(tmp, 2, file), "\x80\x80", 2) || !strncmp(tmp, "\x85\xA4", 2))
 				goto space;
 			goto boring_character;
 		case '\xEF':
-			char tmp[3];
 			llen++;
-			if (!strncmp(fgets(tmp, 2, file), 2, "\xBB\xBF") || !strcmp(tmp, 2, "\xBE\xA0"))
+			if (!strncmp(fgets(tmp, 2, file), "\xBB\xBF", 2) || !strncmp(tmp, "\xBE\xA0", 2))
 				goto space;
 			goto boring_character;
 
@@ -300,7 +321,7 @@ newline:
 			}
 			if (!just_saw_newline) {
 				just_saw_newline = true;
-				valid_files[i].lines[lineno].len = potentially_whitespace_prohibited ? 0 : llen - whitespace_amount;
+				valid_files[i].lines[lineno].len = potentially_sequence_prohibited ? 0 : llen - whitespace_amount;
 				llen = 0;
 				c = fgetc(file);
 				lineno++;
@@ -333,6 +354,10 @@ space:
 				llen += 4;
 				continue;
 			}
+			/* No valid UTF-8 sequence will have bytes higher than 0xF4, so…*/
+#ifdef __GNUC__
+			__builtin_unreachable();
+#endif
 
 		default:
 			llen++;
@@ -342,8 +367,7 @@ boring_character:
 				valid_files[i].lines[lineno].off = ftell(file);
 			}
 			fseek(file, -2, SEEK_CUR);
-			char tmp[3];
-			potentially_sequence_prohibited = strncmp(fgets(tmp, 2, file), 2, "\xC2\x9C") ? potentially_sequence_prohibited : false;
+			potentially_sequence_prohibited = strncmp(fgets(tmp, 2, file), "\xC2\x9C", 2) ? potentially_sequence_prohibited : false;
 		}
 
 		if (stack != NULL) {
@@ -360,7 +384,7 @@ boring_character:
 	}
 
 	/* select a splash */
-	char * splash = malloc(length_restrictions[1]);
+	splash = malloc(length_restrictions[1]);
 	if (splash == NULL)
 		goto exit_failurously;
 
@@ -370,7 +394,7 @@ boring_character:
 	}
 	srand((unsigned int)(start.tv_nsec + start.tv_sec));  // since the resolution of the system clock may not go into the nanoseconds
 
-	int filerandnum, linerandnum;
+	unsigned int filerandnum, linerandnum;
 	/* XXX:  STUPID MATHS AHEAD
 	*
 	* Basically, to calculate the weights, what we do is we go through the list of weights, find the smallest one, and have the associated file occur in a list exactly once.  The other files are then given a certain number of entries based upon how the smallest weight divides into it.  */
@@ -380,7 +404,7 @@ boring_character:
 		total_weight += valid_files[i].file->weight;
 		smallest_weight = valid_files[i].file->weight < smallest_weight ? valid_files[i].file->weight : smallest_weight;
 	}
-	size_t weighted_file_list[total_weight / smallest_weight];
+	size_t * weighted_file_list = malloc((size_t)total_weight / smallest_weight);
 	for (register size_t i = 0, j = 0; i < valid_files_len; i++) {
 		for (register size_t k = 0; k < valid_files[i].file->weight / smallest_weight; j++, k++)
 			weighted_file_list[j] = i;
@@ -394,11 +418,8 @@ boring_character:
 		if (current.tv_sec - start.tv_sec > 5)
 			goto exit_failurously;
 	} while (filerandnum >= RAND_MAX - (sizeof weighted_file_list / sizeof weighted_file_list[0]) && valid_files[weighted_file_list[(filerandnum %= valid_files_len)]].file != NULL);
-	const struct {
-		struct splashtext$filestruct * file;
-		struct splashtext$static$counted_line * lines;
-		size_t lines_len;
-	} * selected_file = &valid_files[weighted_files_list[filerandnum]];
+	const struct splashtext$static$frivilous_struct * selected_file = &valid_files[weighted_file_list[filerandnum]];
+	free(weighted_file_list);
 	do {
 		linerandnum = rand();
 		if (!timespec_get(&current, TIME_UTC))
@@ -408,7 +429,9 @@ boring_character:
 	} while (linerandnum >= RAND_MAX - selected_file->lines_len && selected_file->lines[(linerandnum %= selected_file->lines_len)].len < length_restrictions[1] + 8 /* for the header */ && selected_file->lines[linerandnum].len != 0);
 	const struct splashtext$static$counted_line * selected_line = &selected_file->lines[linerandnum]; // this is actually a pointer this time
 
-	char tmp_splash[selected_line->len + 8 /* see above */];
+	tmp_splash = malloc(selected_line->len + 8 /* see above */);
+	if (tmp_splash == NULL)
+		goto exit_failurously;
 	if (selected_file->file->filename == NULL){
 		int r;
 		do {
@@ -421,7 +444,10 @@ boring_character:
 	} else {
 		FILE * filestream = fopen("r", selected_file->file->filename);
 		fseek(filestream, selected_line->off, SEEK_SET);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result" /* since we already know that this point in the file contains enough data to fill the splash */
 		fread(tmp_splash, 1, selected_line->len, filestream);
+#pragma GCC diagnostic pop
 		fclose(filestream);
 
 		splash[0] = '\x01';
@@ -437,7 +463,7 @@ boring_character:
 			num_discomforters = 3;
 		else
 			num_discomforters = 4;
-		snprintf(&splash[1], num_discomforters + 2, &selected_file->file->filename[contextchar_loc - num_discomforters - 1]);
+		snprintf(&splash[1], num_discomforters + 2, "%s", &selected_file->file->filename[contextchar_loc - num_discomforters - 1]);
 		splash[num_discomforters + 2] = '\x02';
 		splash[num_discomforters + 3] = '\0';
 	}
@@ -451,7 +477,7 @@ boring_character:
 				continue;
 			}
 		}
-		if (!strncmp(tmp_splash[i_tmp + 1], "\xC2\x91", 2) || !strncmp(tmp_splash[i_tmp + 1], "\xC2\x92", 2)) { // Special handling for the PU1-SOS and PU2-SOS sequences; otherwise, they'd be interpreted as a comment that just happens to be preceeded by a private-use control character.
+		if (!strncmp(&tmp_splash[i_tmp + 1], "\xC2\x91", 2) || !strncmp(&tmp_splash[i_tmp + 1], "\xC2\x92", 2)) { // Special handling for the PU1-SOS and PU2-SOS sequences; otherwise, they'd be interpreted as a comment that just happens to be preceeded by a private-use control character.
 			strncat(splash, &tmp_splash[i_tmp + 1], 2);
 			i_tmp += 3;  i_final += 2;
 			continue;
@@ -461,6 +487,7 @@ boring_character:
 		switch (tmp_splash[i_tmp + 1]) {
 		case '\x9B':
 isseq:
+			;
 			register int j = i_tmp + 2;
 			for (; tmp_splash[j] < '\x40'; j++);
 			if (tmp_splash[j] != 'm' || !sequences)
@@ -485,6 +512,7 @@ isseq:
 			continue;
 		case '\x9C':
 			POPSTACK();
+			continue;
 		}
 	case '\x1b':
 		if (tmp_splash[i_tmp + 1] == '[') goto isseq;
@@ -509,19 +537,20 @@ exit_failurously:  // This is definitely a real word.
 	free(stack);
 	free(valid_files);
 	for (register size_t i = 0; i < extra_len; i++)
-		free(extra[i].f);
+		free(extra[i].filename);
 #endif
+	free(tmp_splash);
 	return splash;
 }
 
 #ifndef SPLASHTEXT$NODIRS
-static void splashtext$static$recurse_directory(const char * dirname, float weight, struct {float p; int r; char * f;} extra[], size_t * extra_len)
+static void splashtext$static$recurse_directory(const char * dirname, float weight, struct splashtext$filestruct extra[], size_t * extra_len)
 {
-	DIR * directory = opendir(files[i].filename);
+	DIR * directory = opendir(dirname);
 	if (directory == NULL)
 		return;
 	struct dirent * entry = NULL;
-	struct stat * file_stat = NULL;
+	struct stat file_stat;
 	size_t /* ? */ num_entries = 0;
 	while ((entry = readdir(directory)) != NULL)
 		num_entries++;
@@ -530,12 +559,12 @@ static void splashtext$static$recurse_directory(const char * dirname, float weig
 		stat(entry->d_name, &file_stat);
 		if (!S_ISREG(file_stat.st_mode)) {
 			if (!S_ISDIR(file_stat.st_mode))
-				recurse_directory(entry->d_name, weight / num_entries, extra, &extra_len);
+				splashtext$static$recurse_directory(entry->d_name, weight / num_entries, extra, extra_len);
 		} else {
-			realloc(extra, (*extra_len + 1) * sizeof extra[0]);
+			extra = realloc(extra, (*extra_len + 1) * sizeof extra[0]);
 			extra[*extra_len].filename = malloc(strlen(entry->d_name) + 1);
 			strcpy(extra[*extra_len].filename, entry->d_name);
-			extra[*extra_len].filename = weight / num_entries;
+			extra[*extra_len].weight = weight / num_entries;
 		}
 	}
 	closedir(directory);

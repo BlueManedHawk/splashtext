@@ -46,8 +46,8 @@ struct splashtext$filestruct {
 	float weight;
 	int rnpf_len; // `rnpf` for "*r*and*n*um *p*seudo*f*ile""
 	char * filename;
-}
+};
 
-extern char * splashtext(struct splashtext$filestruct[], size_t, bool, uint_least16_t[2], enum splashtext$discomforter, enum splashtext$context);
+extern char * splashtext(const struct splashtext$filestruct[], size_t, bool, const uint_least16_t[2], enum splashtext$context, enum splashtext$discomforter);
 
 #endif/*ndef SPLASHTEXT_H*/

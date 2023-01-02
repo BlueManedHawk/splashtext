@@ -1,0 +1,4 @@
+Source/Program/*.o
+Source/Library/*.o
+libsplashtext.a
+splashtext
