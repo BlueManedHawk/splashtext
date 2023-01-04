@@ -66,7 +66,8 @@ to be a null pointer, in which case Splash Text will pretend that it's a file wh
 (the returned string has information that allows you to tell whether the splash is a number from one of these pseudofiles).  The maximum value for
 .I .rnpf_len
 is
-.BR RAND_MAX .
+.BR RAND_MAX ,
+and it can't be negative.
 (The name
 .I .rnpf_len
 comes from the phrase
@@ -116,7 +117,7 @@ argument specifies whether ECMA-48 SGR sequences may be included in splashes.  N
 .BR false ,
 they will be stripped out (but in some cases replacements may be put in their place—see below the description of the Splash Text file format).
 .SS The Splash File File Format
-Splash files are plain UTF-8 text files.  Each line is a splash.  Blank lines and trailing whitespace are ignored.  Comments are started with U+0098 and terminated with U+009C (i.e. Start Of String and String Terminator).  A shebang directive at the start of a file is ignored.
+Splash files are plain UTF-8 text files.  Each line is a splash.  Blank lines and trailing whitespace are ignored.  Comments are started with U+0003 (i.e. End of TeXt) and go to the end of the line.  (Lines of only whitespace or only a comment or both are considered blank.)  A shebang directive at the start of the file is ignored.
 
 The name of a splash file is of the format
 .IB name . abc . x .splash.txt
@@ -137,10 +138,11 @@ Splashes may contain ECMA-48 Select Graphical Rendition sequences (introduced wi
 .B true
 for the
 .I sequences
-argument or the escape-bracket/control sequence introducer is preceeded by a backslash.  If you want to include some text only when such sequences are unavailable (for example, to surround a piece of text in underscores only when it can't be italicized), begin that substring with U+0091 U+0098 and terminate it with U+009C.  For the opposite, replace U+0091 with U+0092.  Splash Text will detect when an entire splash is delimited like this and only select it when it wouldn't be an empty line.
+argument or the escape-bracket/control sequence introducer is preceeded by a backslash.  If you want to include some text only when such sequences are unavailable (for example, to surround a piece of text in underscores only when it can't be italicized), begin that substring with U+0091 U+0098 and terminate it with U+009C.  For the opposite, replace U+0091 with U+0092.  Splash Text will detect when an entire splash is delimited like this and only select it when it wouldn't be an empty line.  A newline will be treated equivalently to a U+009C.
 
-.B Warning:
-If a splash file contains an unmatched SOS, PU1-SOS, PU2-SOS, or ST, the file will be rejected.  These can nest, though i don't know why you'd want to do that.  You can include these sequences of codepoints literally by preceeding them with a backslash (this can also be done to include a literal backslash and, as mentioned above, an ignored SGR sequence).  You cannot do this with newlines; attempts to do so will result in a rejection of the file.  You also can't put newlines in a sequences-only or sequences-prohibited substring, but you can put them in comment substrings.  Please also keep in mind that Splash Text only recognizes SGR sequences, and not anything else specified as part of ECMA-48.  (However, private-use parameter bytes are okay.)
+The backslash can preceed any character to have it be interpreted as a regular character instead of using whatever special effects the character might have,
+.B unless
+it's a newline.
 
 Splash Text comes with a Vim syntax highlighting file that you can install if you want.
 .SS Command-Line Wrapper Program
@@ -148,7 +150,7 @@ The command-line wrapper program has syntax as follows:
 .RS
 .BI "splashtext (--help|--version|[--sequences] [--minlen " num "] [--maxlen " num "] [--discomforters " str "...] --contexts " str "... -- (" "[weight] pathname" ")...)"
 .RE
-The weight is disambiguated from the pathname by preceeding it with a percent sign.  The numerical psuedofiles are encoded as a number preceeded by a forward slash.  An actual filename beginning with a percent sign, foreslash, or backslash must be prepended with a backslash.  The strings used for the discomforters and contexts options are the same as the corresponding enumerators, but with everything before and including the double dollar sign removed.  The program will return 1 if invoked with the help or version options (which override all other options), and will return 2 if a splash can't be found (in this case, it will also output nothing).  The splashes output by the program are terminated with a newline, not a nul.  The program does not support short options.
+The weight is disambiguated from the pathname by preceeding it with a percent sign.  The numerical psuedofiles are encoded as a number preceeded by an octothorpe.  An actual filename beginning with a percent sign, octothorpe, or backslash must be prepended with a backslash.  The strings used for the discomforters and contexts options are the same as the corresponding enumerators, but with everything before and including the double dollar sign removed.  The program will return 1 if invoked with the help or version options (which override all other options), and will return 2 if a splash can't be found (in this case, it will also output nothing).  The splashes output by the program are terminated with a newline, not a nul.  The program does not support short options.
 .SS Recommended Practice
 Once you've gotten the splash text and are showing it to your user, you should render it in yellow, or in red if it's an ominous splash.  (These colors will automatically be added if you specify
 .B true
